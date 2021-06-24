@@ -33,6 +33,17 @@ pub fn main() {
 #[derive(RenderResources, Default, TypeUuid)]
 #[uuid = "463e4b8a-d555-4fc2-ba9f-4c880063ba92"]
 struct ShaderToyUniform {
+    resolution: Vec3,
+    time: f32,
+    time_delta: f32,
+    frame: f32,
+    channel_time: Vec4,
+    //channel_time: [f32; 4],
+    mouse: Vec4,
+    date: Vec4,
+    sample_rate: f32,
+    //channel_resolution: [Vec3; 4],
+    //TODO_sampler_XX: Option<f32>,
     value: f32,
     another_value: f32,
 }
@@ -153,10 +164,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
         })
-        .insert(ShaderToyUniform {
-            value: 0.0,
-            another_value: 0.0,
-        })
+        .insert(ShaderToyUniform::default())
         .insert(MouseX { value: 0.0 })
         .insert(MouseY { value: 0.0 });
 
