@@ -1,15 +1,22 @@
-use bevy::{input::{InputPlugin, }, prelude::*, reflect::TypeUuid, render::{
-        mesh::shape,
-        pipeline::{PipelineDescriptor, RenderPipeline},
-        render_graph::{base, RenderGraph, RenderResourcesNode},
-        renderer::RenderResources,
-        shader::{ShaderStage, ShaderStages},
-    }};
 use bevy::{
     input::mouse::{MouseButtonInput, MouseMotion, MouseWheel},
     prelude::*,
     window::CursorMoved,
 };
+use bevy::{
+    input::InputPlugin,
+    prelude::*,
+    reflect::TypeUuid,
+    render::{
+        mesh::shape,
+        pipeline::{PipelineDescriptor, RenderPipeline},
+        render_graph::{base, RenderGraph, RenderResourcesNode},
+        renderer::RenderResources,
+        shader::{ShaderStage, ShaderStages},
+    },
+};
+
+pub mod download;
 
 /// This example shows how to animate a shader, by passing the global `time.seconds_since_startup()`
 /// via a 'TimeComponent` to the shader.
@@ -25,8 +32,9 @@ pub fn main() {
 
 #[derive(RenderResources, Default, TypeUuid)]
 #[uuid = "463e4b8a-d555-4fc2-ba9f-4c880063ba92"]
-struct TimeUniform {
+struct ShaderToyUniform {
     value: f32,
+    another_value: f32,
 }
 
 #[derive(RenderResources, Default, TypeUuid)]
@@ -68,21 +76,25 @@ const FRAGMENT_SHADER: &str = r#"
 layout(location = 0) in vec2 v_Uv;
 layout(location = 0) out vec4 o_Target;
 
-layout(set = 2, binding = 0) uniform TimeUniform_value {
+layout(set = 2, binding = 0) uniform ShaderToyUniform_value {
     float time;
 };
 
-layout(set = 2, binding = 1) uniform MouseX_value {
+layout(set = 2, binding = 1) uniform ShaderToyUniform_another_value {
+    float another_time;
+};
+
+layout(set = 2, binding = 2) uniform MouseX_value {
     float mouse_x;
 };
 
-layout(set = 2, binding = 2) uniform MouseY_value {
+layout(set = 2, binding = 3) uniform MouseY_value {
     float mouse_y;
 };
 
 void main() {
     float speed = 1.0;
-    float translation = sin(time * speed);
+    float translation = sin(another_time * speed);
     float percentage = 1.0;
     float threshold = v_Uv.x + translation * percentage;
 
@@ -113,16 +125,10 @@ fn setup(
     // shader.
     render_graph.add_system_node(
         "time_uniform",
-        RenderResourcesNode::<TimeUniform>::new(true),
+        RenderResourcesNode::<ShaderToyUniform>::new(true),
     );
-    render_graph.add_system_node(
-        "mouse_x",
-        RenderResourcesNode::<MouseX>::new(true),
-    );
-    render_graph.add_system_node(
-        "mouse_y",
-        RenderResourcesNode::<MouseY>::new(true),
-    );
+    render_graph.add_system_node("mouse_x", RenderResourcesNode::<MouseX>::new(true));
+    render_graph.add_system_node("mouse_y", RenderResourcesNode::<MouseY>::new(true));
 
     // Add a `RenderGraph` edge connecting our new "time_component" node to the main pass node. This
     // ensures that "time_component" runs before the main pass.
@@ -147,9 +153,12 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
         })
-        .insert(TimeUniform { value: 0.0})
-        .insert(MouseX { value: 0.0})
-        .insert(MouseY { value: 0.0});
+        .insert(ShaderToyUniform {
+            value: 0.0,
+            another_value: 0.0,
+        })
+        .insert(MouseX { value: 0.0 })
+        .insert(MouseY { value: 0.0 });
 
     // Spawn a camera.
     commands.spawn_bundle(PerspectiveCameraBundle {
@@ -162,19 +171,22 @@ fn setup(
 /// In this system we query for the `TimeComponent` and global `Time` resource, and set
 /// `time.seconds_since_startup()` as the `value` of the `TimeComponent`. This value will be
 /// accessed by the fragment shader and used to animate the shader.
-fn animate_shader(mut mouse_motion: EventReader<CursorMoved>, time: Res<Time>, mut query: Query<(&mut TimeUniform, &mut MouseX, &mut MouseY)>) {
-
-
+fn animate_shader(
+    mut mouse_motion: EventReader<CursorMoved>,
+    time: Res<Time>,
+    mut query: Query<(&mut ShaderToyUniform, &mut MouseX, &mut MouseY)>,
+) {
     let (mut time_uniform, mut mouse_x, mut mouse_y) = query.single_mut().unwrap();
     time_uniform.value = time.seconds_since_startup() as f32;
+    time_uniform.another_value = time.seconds_since_startup() as f32;
 
     match mouse_motion.iter().last() {
         Some(x) => {
             // bevy::log::info!("{:?}", x);
             mouse_x.value = x.position.x;
             mouse_y.value = x.position.y;
-        },
-        None => {},
+        }
+        None => {}
     }
 }
 
@@ -199,4 +211,9 @@ fn print_mouse_events_system(
     for event in mouse_wheel_events.iter() {
         info!("{:?}", event);
     }
+}
+
+#[test]
+fn test_download_shader() {
+    println!("Download");
 }
