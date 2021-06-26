@@ -16,6 +16,7 @@ use bevy::{
     },
 };
 
+pub mod debug_systems;
 pub mod download;
 
 /// This example shows how to animate a shader, by passing the global `time.seconds_since_startup()`
@@ -26,7 +27,9 @@ pub fn main() {
         .add_plugin(InputPlugin)
         .add_startup_system(setup.system())
         .add_system(animate_shader.system())
-        .add_system(print_mouse_events_system.system())
+        .add_system(debug_systems::print_asset_events.system())
+        // .add_system(debug_systems::print_mouse_events.system())
+        // .add_system(check_for_shader_updates())
         .run();
 }
 
@@ -117,6 +120,18 @@ void main() {
 }
 "#;
 
+// fn shader_reloader(
+//     keyboard_input: Res<Input<KeyCode>>,
+//     asset_server: ResMut<AssetServer>,
+//     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
+//     mut shaders: ResMut<Assets<Shader>>,
+//     mut render_graph: ResMut<RenderGraph>,
+// ) {
+//     if keyboard_input.pressed(Keyode::R) {
+//         asset_server.load();
+//     }
+// }
+
 fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
@@ -126,6 +141,10 @@ fn setup(
     mut render_graph: ResMut<RenderGraph>,
 ) {
     bevy::log::info!("Creating render pipeline");
+    asset_server.watch_for_changes().unwrap();
+    let vertex_shader: Handle<Shader> = asset_server.load("./shaders/demo.vs");
+    let fragment_shader: Handle<Shader> = asset_server.load("./shaders/demo.fs");
+
     // Create a new shader pipeline.
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
         vertex: shaders.add(Shader::from_glsl(ShaderStage::Vertex, VERTEX_SHADER)),
@@ -195,29 +214,6 @@ fn animate_shader(
             mouse_y.value = x.position.y;
         }
         None => {}
-    }
-}
-
-fn print_mouse_events_system(
-    mut mouse_button_input_events: EventReader<MouseButtonInput>,
-    mut mouse_motion_events: EventReader<MouseMotion>,
-    mut cursor_moved_events: EventReader<CursorMoved>,
-    mut mouse_wheel_events: EventReader<MouseWheel>,
-) {
-    for event in mouse_button_input_events.iter() {
-        info!("{:?}", event);
-    }
-
-    for event in mouse_motion_events.iter() {
-        info!("{:?}", event);
-    }
-
-    for event in cursor_moved_events.iter() {
-        info!("{:?}", event);
-    }
-
-    for event in mouse_wheel_events.iter() {
-        info!("{:?}", event);
     }
 }
 
