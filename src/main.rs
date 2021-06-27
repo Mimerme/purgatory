@@ -12,7 +12,7 @@ use bevy::{
         pipeline::{PipelineDescriptor, RenderPipeline},
         render_graph::{base, RenderGraph, RenderResourcesNode},
         renderer::RenderResources,
-        shader::{ShaderStage, ShaderStages},
+        shader::{ShaderStage, ShaderStages, ShaderSource},
     },
 };
 
@@ -51,18 +51,6 @@ struct ShaderToyUniform {
     another_value: f32,
 }
 
-#[derive(RenderResources, Default, TypeUuid)]
-#[uuid = "93fb26fc-6c05-489b-9029-601edf703b6e"]
-struct MouseX {
-    value: f32,
-}
-
-#[derive(RenderResources, Default, TypeUuid)]
-#[uuid = "93fb26fc-6c05-489b-9029-601edf703b6b"]
-struct MouseY {
-    value: f32,
-}
-
 const VERTEX_SHADER: &str = r#"
 #version 450
 
@@ -98,39 +86,19 @@ layout(set = 2, binding = 1) uniform ShaderToyUniform_another_value {
     float another_time;
 };
 
-layout(set = 2, binding = 2) uniform MouseX_value {
-    float mouse_x;
-};
-
-layout(set = 2, binding = 3) uniform MouseY_value {
-    float mouse_y;
-};
-
 void main() {
     float speed = 1.0;
-    float translation = sin(another_time * speed);
+    float translation = sin(time * speed);
     float percentage = 1.0;
     float threshold = v_Uv.x + translation * percentage;
 
-    vec3 red = vec3(mouse_x / 1279.0, 0., 0.);
+    vec3 red = vec3(1., 0., 0.);
     vec3 blue = vec3(0., 0., 1.);
     vec3 mixed = mix(red, blue, threshold);
 
     o_Target = vec4(mixed, 1.0);
 }
 "#;
-
-// fn shader_reloader(
-//     keyboard_input: Res<Input<KeyCode>>,
-//     asset_server: ResMut<AssetServer>,
-//     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
-//     mut shaders: ResMut<Assets<Shader>>,
-//     mut render_graph: ResMut<RenderGraph>,
-// ) {
-//     if keyboard_input.pressed(Keyode::R) {
-//         asset_server.load();
-//     }
-// }
 
 fn setup(
     mut commands: Commands,
@@ -142,8 +110,10 @@ fn setup(
 ) {
     bevy::log::info!("Creating render pipeline");
     asset_server.watch_for_changes().unwrap();
-    let vertex_shader: Handle<Shader> = asset_server.load("./shaders/demo.vs");
-    let fragment_shader: Handle<Shader> = asset_server.load("./shaders/demo.fs");
+    let vertex_shader: Handle<Shader> = asset_server.load("./shaders/demo.vert");
+    let fragment_shader: Handle<Shader> = asset_server.load("./shaders/demo.frag");
+
+    bevy::log::info!("Shader {:?}", shaders.get(vertex_shader));
 
     // Create a new shader pipeline.
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
@@ -157,20 +127,18 @@ fn setup(
         "time_uniform",
         RenderResourcesNode::<ShaderToyUniform>::new(true),
     );
-    render_graph.add_system_node("mouse_x", RenderResourcesNode::<MouseX>::new(true));
-    render_graph.add_system_node("mouse_y", RenderResourcesNode::<MouseY>::new(true));
 
     // Add a `RenderGraph` edge connecting our new "time_component" node to the main pass node. This
     // ensures that "time_component" runs before the main pass.
     render_graph
         .add_node_edge("time_uniform", base::node::MAIN_PASS)
         .unwrap();
-    render_graph
-        .add_node_edge("mouse_x", base::node::MAIN_PASS)
-        .unwrap();
-    render_graph
-        .add_node_edge("mouse_y", base::node::MAIN_PASS)
-        .unwrap();
+    // render_graph
+    //     .add_node_edge("mouse_x", base::node::MAIN_PASS)
+    //     .unwrap();
+    // render_graph
+    //     .add_node_edge("mouse_y", base::node::MAIN_PASS)
+    //     .unwrap();
 
     bevy::log::info!("Creating entities");
     // Spawn a quad and insert the `TimeComponent`.
@@ -183,9 +151,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
         })
-        .insert(ShaderToyUniform::default())
-        .insert(MouseX { value: 0.0 })
-        .insert(MouseY { value: 0.0 });
+        .insert(ShaderToyUniform::default());
 
     // Spawn a camera.
     commands.spawn_bundle(PerspectiveCameraBundle {
@@ -201,17 +167,17 @@ fn setup(
 fn animate_shader(
     mut mouse_motion: EventReader<CursorMoved>,
     time: Res<Time>,
-    mut query: Query<(&mut ShaderToyUniform, &mut MouseX, &mut MouseY)>,
+    mut query: Query<(&mut ShaderToyUniform)>,
 ) {
-    let (mut time_uniform, mut mouse_x, mut mouse_y) = query.single_mut().unwrap();
+    let (mut time_uniform) = query.single_mut().unwrap();
     time_uniform.value = time.seconds_since_startup() as f32;
     time_uniform.another_value = time.seconds_since_startup() as f32;
 
     match mouse_motion.iter().last() {
         Some(x) => {
             // bevy::log::info!("{:?}", x);
-            mouse_x.value = x.position.x;
-            mouse_y.value = x.position.y;
+            // .value = x.position.x;
+            // mouse_y.value = x.position.y;
         }
         None => {}
     }
