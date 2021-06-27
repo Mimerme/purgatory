@@ -19,6 +19,9 @@ use bevy::{
 pub mod debug_systems;
 pub mod download;
 
+// Some bevy examples for le newbs 
+// https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
+
 /// This example shows how to animate a shader, by passing the global `time.seconds_since_startup()`
 /// via a 'TimeComponent` to the shader.
 pub fn main() {
