@@ -28,7 +28,7 @@ pub fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_plugin(InputPlugin)
-        .add_asset::<Shader>()
+        // .add_asset::<Shader>()
         .add_startup_system(setup.system())
         .add_system(animate_shader.system())
         .add_system(debug_systems::print_asset_events.system())

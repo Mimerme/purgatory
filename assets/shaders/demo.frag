@@ -14,7 +14,7 @@ void main() {
     float threshold = v_Uv.x + translation * percentage;
 
     vec3 red = vec3(1., 0., 0.);
-    vec3 blue = vec3(0., 1., 0.);
+    vec3 blue = vec3(0., 0., 1.);
     vec3 mixed = mix(red, blue, threshold);
 
     o_Target = vec4(mixed, 1.0);
