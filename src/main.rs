@@ -12,14 +12,14 @@ use bevy::{
         pipeline::{PipelineDescriptor, RenderPipeline},
         render_graph::{base, RenderGraph, RenderResourcesNode},
         renderer::RenderResources,
-        shader::{ShaderStage, ShaderStages, ShaderSource},
+        shader::{ShaderSource, ShaderStage, ShaderStages},
     },
 };
 
 pub mod debug_systems;
 pub mod download;
 
-// Some bevy examples for le newbs 
+// Some bevy examples for le newbs
 // https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
 
 /// This example shows how to animate a shader, by passing the global `time.seconds_since_startup()`
@@ -116,12 +116,12 @@ fn setup(
     let vertex_shader: Handle<Shader> = asset_server.load("./shaders/demo.vert");
     let fragment_shader: Handle<Shader> = asset_server.load("./shaders/demo.frag");
 
-    bevy::log::info!("Shader {:?}", shaders.get(vertex_shader));
+    bevy::log::info!("Shader {:?}", vertex_shader);
 
     // Create a new shader pipeline.
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
-        vertex: shaders.add(Shader::from_glsl(ShaderStage::Vertex, VERTEX_SHADER)),
-        fragment: Some(shaders.add(Shader::from_glsl(ShaderStage::Fragment, FRAGMENT_SHADER))),
+        vertex: vertex_shader,
+        fragment: Some(fragment_shader),
     }));
 
     // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
