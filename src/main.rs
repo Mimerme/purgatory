@@ -10,7 +10,7 @@ use bevy::{
     render::{
         mesh::shape,
         pipeline::{PipelineDescriptor, RenderPipeline},
-        render_graph::{base, RenderGraph, RenderResourcesNode},
+        render_graph::{base, RenderGraph, RenderResourcesNode, AssetRenderResourcesNode},
         renderer::RenderResources,
         shader::{ShaderSource, ShaderStage, ShaderStages},
     },
@@ -28,6 +28,7 @@ pub fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_plugin(InputPlugin)
+        .add_asset::<Shader>()
         .add_startup_system(setup.system())
         .add_system(animate_shader.system())
         .add_system(debug_systems::print_asset_events.system())
@@ -113,15 +114,12 @@ fn setup(
 ) {
     bevy::log::info!("Creating render pipeline");
     asset_server.watch_for_changes().unwrap();
-    let vertex_shader: Handle<Shader> = asset_server.load("./shaders/demo.vert");
-    let fragment_shader: Handle<Shader> = asset_server.load("./shaders/demo.frag");
 
-    bevy::log::info!("Shader {:?}", vertex_shader);
 
     // Create a new shader pipeline.
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
-        vertex: vertex_shader,
-        fragment: Some(fragment_shader),
+        vertex: asset_server.load("shaders/demo.vert"),
+        fragment: Some(asset_server.load("shaders/demo.frag")),
     }));
 
     // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
