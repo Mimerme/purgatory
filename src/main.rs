@@ -10,7 +10,7 @@ use bevy::{
     render::{
         mesh::shape,
         pipeline::{PipelineDescriptor, RenderPipeline},
-        render_graph::{base, RenderGraph, RenderResourcesNode, AssetRenderResourcesNode},
+        render_graph::{base, AssetRenderResourcesNode, RenderGraph, RenderResourcesNode},
         renderer::RenderResources,
         shader::{ShaderSource, ShaderStage, ShaderStages},
     },
@@ -27,11 +27,12 @@ pub mod download;
 pub fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputPlugin)
+        // .add_plugin(InputPlugin)
         // .add_asset::<Shader>()
         .add_startup_system(setup.system())
         .add_system(animate_shader.system())
-        .add_system(debug_systems::print_asset_events.system())
+        // .add_system(debug_systems::print_asset_events.system())
+        .add_system(mouse_click_system.system())
         // .add_system(debug_systems::print_mouse_events.system())
         // .add_system(check_for_shader_updates())
         .run();
@@ -55,55 +56,6 @@ struct ShaderToyUniform {
     another_value: f32,
 }
 
-const VERTEX_SHADER: &str = r#"
-#version 450
-
-layout(location = 0) in vec3 Vertex_Position;
-layout(location = 1) in vec2 Vertex_Uv;
-layout(location = 0) out vec2 v_Uv;
-
-layout(set = 0, binding = 0) uniform CameraViewProj {
-    mat4 ViewProj;
-};
-
-layout(set = 1, binding = 0) uniform Transform {
-    mat4 Model;
-};
-
-void main() {
-    gl_Position = ViewProj * Model * vec4(Vertex_Position, 1.0);
-    v_Uv = Vertex_Uv;
-}
-"#;
-
-const FRAGMENT_SHADER: &str = r#"
-#version 450
-
-layout(location = 0) in vec2 v_Uv;
-layout(location = 0) out vec4 o_Target;
-
-layout(set = 2, binding = 0) uniform ShaderToyUniform_value {
-    float time;
-};
-
-layout(set = 2, binding = 1) uniform ShaderToyUniform_another_value {
-    float another_time;
-};
-
-void main() {
-    float speed = 1.0;
-    float translation = sin(time * speed);
-    float percentage = 1.0;
-    float threshold = v_Uv.x + translation * percentage;
-
-    vec3 red = vec3(1., 0., 0.);
-    vec3 blue = vec3(0., 0., 1.);
-    vec3 mixed = mix(red, blue, threshold);
-
-    o_Target = vec4(mixed, 1.0);
-}
-"#;
-
 fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
@@ -114,7 +66,6 @@ fn setup(
 ) {
     bevy::log::info!("Creating render pipeline");
     asset_server.watch_for_changes().unwrap();
-
 
     // Create a new shader pipeline.
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
@@ -162,26 +113,47 @@ fn setup(
 
     bevy::log::info!("Finished Initialization");
 }
+fn mouse_click_system(mouse_button_input: Res<Input<MouseButton>>) {
+    if mouse_button_input.pressed(MouseButton::Left) {
+        info!("left mouse currently pressed");
+    }
+
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        info!("left mouse just pressed");
+    }
+
+    if mouse_button_input.just_released(MouseButton::Left) {
+        info!("left mouse just released");
+    }
+}
+
 /// In this system we query for the `TimeComponent` and global `Time` resource, and set
 /// `time.seconds_since_startup()` as the `value` of the `TimeComponent`. This value will be
 /// accessed by the fragment shader and used to animate the shader.
 fn animate_shader(
     mut mouse_motion: EventReader<CursorMoved>,
+    mouse_button: Res<Input<MouseButton>>,
     time: Res<Time>,
+    windows : Res<Windows>,   
     mut query: Query<(&mut ShaderToyUniform)>,
 ) {
+    let cursor_pos = if let Some(pos) = windows.iter().last().unwrap().cursor_position() {pos} else {Vec2::new(0.0,0.0)};
     let (mut time_uniform) = query.single_mut().unwrap();
     time_uniform.value = time.seconds_since_startup() as f32;
     time_uniform.another_value = time.seconds_since_startup() as f32;
 
-    match mouse_motion.iter().last() {
-        Some(x) => {
-            // bevy::log::info!("{:?}", x);
-            // .value = x.position.x;
-            // mouse_y.value = x.position.y;
-        }
-        None => {}
-    }
+    let mut left = if mouse_button.pressed(MouseButton::Left) {
+        1.0
+    } else {
+        0.0
+    };
+    let mut right = if mouse_button.pressed(MouseButton::Right) {
+        1.0
+    } else {
+        0.0
+    };
+    
+    time_uniform.mouse = Vec4::new(cursor_pos.x, cursor_pos.y, left, right);
 }
 
 #[test]
