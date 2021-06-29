@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 
 #[derive(Debug)]
 pub struct GenericError {
@@ -29,13 +29,13 @@ pub fn download(id: &str) -> Result<(String, String), Box<dyn Error>> {
     let (name, code) = get_shader_name_and_code(id)?;
 
     File::create(&name)
-        .or_else(|err| {
+        .or_else(|_err| {
             Err(Box::new(GenericError {
                 msg: "Error creating file when saving shader".to_string(),
             }))
         })?
         .write_all(code.as_bytes())
-        .or_else(|err| {
+        .or_else(|_err| {
             Err(Box::new(GenericError {
                 msg: "Error writing shader to file (check permissions)".to_string(),
             }))
@@ -51,10 +51,10 @@ fn return_save_shader_error() -> Result<String, Box<dyn Error>> {
     }))
 }
 
-fn get_shader_name_and_code(mut id: &str) -> Result<(String, String), Box<dyn Error>> {
-    let https_url = "https://www.shadertoy.com/view/";
-    let http_url = "http://www.shadertoy.com/view/";
-    let url = "www.shadertoy.com/view/";
+fn get_shader_name_and_code(id: &str) -> Result<(String, String), Box<dyn Error>> {
+    let _https_url = "https://www.shadertoy.com/view/";
+    let _http_url = "http://www.shadertoy.com/view/";
+    let _url = "www.shadertoy.com/view/";
 
     let json = serde_json::from_str::<Value>(&get_json_string(id)?)?;
 

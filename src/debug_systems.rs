@@ -34,11 +34,11 @@ pub fn print_asset_events(mut reader: EventReader<AssetEvent<Shader>>) {
                 // asset just finished loading
                 info!("Shader asset loaded: {:?}", handle);
             }
-            AssetEvent::Modified { handle } => {
+            AssetEvent::Modified { handle: _ } => {
                 // asset was changed
                 info!("Shader asset reloaded");
             }
-            AssetEvent::Removed { handle } => {
+            AssetEvent::Removed { handle: _ } => {
                 // asset was unloaded
                 info!("Shader asset unloaded");
             }

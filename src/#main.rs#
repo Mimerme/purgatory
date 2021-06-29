@@ -1,16 +1,19 @@
+
 use bevy::{
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    input::mouse::{MouseButtonInput, MouseMotion, MouseWheel},
     prelude::*,
     window::CursorMoved,
 };
 use bevy::{
+    input::InputPlugin,
+    prelude::*,
     reflect::TypeUuid,
     render::{
         mesh::shape,
         pipeline::{PipelineDescriptor, RenderPipeline},
         render_graph::{base, RenderGraph, RenderResourcesNode},
         renderer::RenderResources,
-        shader::ShaderStages,
+        shader::{ShaderSource, ShaderStage, ShaderStages},
     },
 };
 
@@ -20,26 +23,17 @@ pub mod download;
 // Some bevy examples for le newbs
 // https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
 
-#[derive(Default)]
-struct CurrentFrame(i32);
-
 /// This example shows how to animate a shader, by passing the global `time.seconds_since_startup()`
 /// via a 'TimeComponent` to the shader.
 pub fn main() {
     App::build()
-        .insert_resource(CurrentFrame(0))
         .add_plugins(DefaultPlugins)
-        // .add_plugin(InputPlugin)
-        .add_asset::<Shader>()
-        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        // Adds a system that prints diagnostics to the console
-        // .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(InputPlugin)
         .add_startup_system(setup.system())
         .add_system(animate_shader.system())
-        // .add_system(debug_systems::print_asset_events.system())
-        // .add_system(mouse_click_system.system())
-        // // .add_system(debug_systems::print_mouse_events.system())
-        // .add_system(check_for_nshader_updates())
+        .add_system(debug_systems::print_asset_events.system())
+        // .add_system(debug_systems::print_mouse_events.system())
+        // .add_system(check_for_shader_updates())
         .run();
 }
 
@@ -49,7 +43,7 @@ struct ShaderToyUniform {
     resolution: Vec3,
     time: f32,
     time_delta: f32,
-    frame: i32,
+    frame: f32,
     channel_time: Vec4,
     //channel_time: [f32; 4],
     mouse: Vec4,
@@ -61,21 +55,74 @@ struct ShaderToyUniform {
     another_value: f32,
 }
 
+const VERTEX_SHADER: &str = r#"
+#version 450
+
+layout(location = 0) in vec3 Vertex_Position;
+layout(location = 1) in vec2 Vertex_Uv;
+layout(location = 0) out vec2 v_Uv;
+
+layout(set = 0, binding = 0) uniform CameraViewProj {
+    mat4 ViewProj;
+};
+
+layout(set = 1, binding = 0) uniform Transform {
+    mat4 Model;
+};
+
+void main() {
+    gl_Position = ViewProj * Model * vec4(Vertex_Position, 1.0);
+    v_Uv = Vertex_Uv;
+}
+"#;
+
+const FRAGMENT_SHADER: &str = r#"
+#version 450
+
+layout(location = 0) in vec2 v_Uv;
+layout(location = 0) out vec4 o_Target;
+
+layout(set = 2, binding = 0) uniform ShaderToyUniform_value {
+    float time;
+};
+
+layout(set = 2, binding = 1) uniform ShaderToyUniform_another_value {
+    float another_time;
+};
+
+void main() {
+    float speed = 1.0;
+    float translation = sin(time * speed);
+    float percentage = 1.0;
+    float threshold = v_Uv.x + translation * percentage;
+
+    vec3 red = vec3(1., 0., 0.);
+    vec3 blue = vec3(0., 0., 1.);
+    vec3 mixed = mix(red, blue, threshold);
+
+    o_Target = vec4(mixed, 1.0);
+}
+"#;
+
 fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
-    _shaders: ResMut<Assets<Shader>>,
     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
+    mut shaders: ResMut<Assets<Shader>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut render_graph: ResMut<RenderGraph>,
 ) {
     bevy::log::info!("Creating render pipeline");
     asset_server.watch_for_changes().unwrap();
+    let vertex_shader: Handle<Shader> = asset_server.load("./shaders/demo.vert");
+    let fragment_shader: Handle<Shader> = asset_server.load("./shaders/demo.frag");
+
+    bevy::log::info!("Shader {:?}", vertex_shader);
 
     // Create a new shader pipeline.
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
-        vertex: asset_server.load("shaders/demo.vert"),
-        fragment: Some(asset_server.load("shaders/demo.frag")),
+        vertex: vertex_shader,
+        fragment: Some(fragment_shader),
     }));
 
     // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
@@ -118,57 +165,26 @@ fn setup(
 
     bevy::log::info!("Finished Initialization");
 }
-fn mouse_click_system(mouse_button_input: Res<Input<MouseButton>>) {
-    if mouse_button_input.pressed(MouseButton::Left) {
-        info!("left mouse currently pressed");
-    }
-
-    if mouse_button_input.just_pressed(MouseButton::Left) {
-        info!("left mouse just pressed");
-    }
-
-    if mouse_button_input.just_released(MouseButton::Left) {
-        info!("left mouse just released");
-    }
-}
-
 /// In this system we query for the `TimeComponent` and global `Time` resource, and set
 /// `time.seconds_since_startup()` as the `value` of the `TimeComponent`. This value will be
 /// accessed by the fragment shader and used to animate the shader.
 fn animate_shader(
-    _mouse_motion: EventReader<CursorMoved>,
-    mut current_frame : ResMut<CurrentFrame>,
-    mouse_button: Res<Input<MouseButton>>,
+    mut mouse_motion: EventReader<CursorMoved>,
     time: Res<Time>,
-    windows: Res<Windows>,
-    mut query: Query<&mut ShaderToyUniform>,
+    mut query: Query<(&mut ShaderToyUniform)>,
 ) {
-    let cursor_pos = if let Some(pos) = windows.iter().last().unwrap().cursor_position() {
-        pos
-    } else {
-        Vec2::new(0.0, 0.0)
-    };
+    let (mut time_uniform) = query.single_mut().unwrap();
+    time_uniform.value = time.seconds_since_startup() as f32;
+    time_uniform.another_value = time.seconds_since_startup() as f32;
 
-    bevy::log::info!("Current Frame: {:?}",current_frame.0);
-
-    let mut time_uniform = query.single_mut().unwrap();
-    time_uniform.time = time.seconds_since_startup() as f32;
-    time_uniform.frame = current_frame.0;
-    time_uniform.time_delta = time.delta_seconds();
-
-    let left = if mouse_button.pressed(MouseButton::Left) {
-        1.0
-    } else {
-        0.0
-    };
-    let right = if mouse_button.pressed(MouseButton::Right) {
-        1.0
-    } else {
-        0.0
-    };
-
-    time_uniform.mouse = Vec4::new(cursor_pos.x, cursor_pos.y, left, right);
-    current_frame.0 += 1;
+    match mouse_motion.iter().last() {
+        Some(x) => {
+            // bevy::log::info!("{:?}", x);
+            // .value = x.position.x;
+            // mouse_y.value = x.position.y;
+        }
+        None => {}
+    }
 }
 
 #[test]
