@@ -32,6 +32,7 @@ pub fn main() {
         .add_plugins(DefaultPlugins)
         // .add_plugin(InputPlugin)
         .add_asset::<Shader>()
+        .add_asset::<ShadertoyChannels>()
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         // Adds a system that prints diagnostics to the console
         // .add_plugin(LogDiagnosticsPlugin::default())
@@ -62,12 +63,22 @@ struct ShaderToyUniform {
     another_value: f32,
 }
 
+#[derive(RenderResources, Default, TypeUuid)]
+#[uuid = "93fb26fc-6c05-489b-9029-601edf703b6b"]
+struct ShadertoyChannels {
+    pub channel0: Option<Handle<Texture>>,
+    pub channel1: Option<Handle<Texture>>,
+    pub channel2: Option<Handle<Texture>>,
+    pub channel3: Option<Handle<Texture>>,
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
     _shaders: ResMut<Assets<Shader>>,
     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut channels: ResMut<Assets<ShadertoyChannels>>,
     mut render_graph: ResMut<RenderGraph>,
 ) {
     bevy::log::info!("Creating render pipeline");
@@ -79,24 +90,19 @@ fn setup(
         fragment: Some(asset_server.load("shaders/demo.frag")),
     }));
 
+    channels.add(ShadertoyChannels {
+        channel0: Some(asset_server.load("noise.png")),
+        channel1: Some(asset_server.load("noise.png")),
+        channel2: Some(asset_server.load("noise.png")),
+        channel3: Some(asset_server.load("noise.png")),
+    });
+
     // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
     // shader.
     render_graph.add_system_node(
         "time_uniform",
         RenderResourcesNode::<ShaderToyUniform>::new(true),
     );
-
-    // Add a `RenderGraph` edge connecting our new "time_component" node to the main pass node. This
-    // ensures that "time_component" runs before the main pass.
-    render_graph
-        .add_node_edge("time_uniform", base::node::MAIN_PASS)
-        .unwrap();
-    // render_graph
-    //     .add_node_edge("mouse_x", base::node::MAIN_PASS)
-    //     .unwrap();
-    // render_graph
-    //     .add_node_edge("mouse_y", base::node::MAIN_PASS)
-    //     .unwrap();
 
     bevy::log::info!("Creating entities");
     // Spawn a quad and insert the `TimeComponent`.
@@ -129,6 +135,8 @@ fn animate_shader(
     mouse_button: Res<Input<MouseButton>>,
     time: Res<Time>,
     windows: Res<Windows>,
+    mut channels: ResMut<Assets<Texture>>,
+
     mut query: Query<&mut ShaderToyUniform>,
 ) {
     let window = windows.iter().last().unwrap();
@@ -145,11 +153,12 @@ fn animate_shader(
     time_uniform.time = time.seconds_since_startup() as f32;
     time_uniform.frame = current_frame.0;
     time_uniform.time_delta = time.delta_seconds();
+
     let now = chrono::offset::Local::now().naive_local();
     now.year();
     let date = now.date();
     let time = now.time();
-    let seconds = time.hour() * time.minute() * time.second();
+    let seconds = time.hour() * (60 * 60) * time.minute() * 60 * time.second();
 
     time_uniform.date = Vec4::new(
         date.year() as f32,
@@ -172,9 +181,4 @@ fn animate_shader(
 
     time_uniform.mouse = Vec4::new(cursor_pos.x, cursor_pos.y, left, right);
     current_frame.0 += 1;
-}
-
-#[test]
-fn test_download_shader() {
-    println!("Download");
 }
