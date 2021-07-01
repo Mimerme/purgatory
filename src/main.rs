@@ -13,6 +13,7 @@ use bevy::{
         shader::ShaderStages,
     },
 };
+use chrono::{Datelike, NaiveDateTime, Timelike};
 
 pub mod debug_systems;
 pub mod download;
@@ -46,7 +47,7 @@ pub fn main() {
 #[derive(RenderResources, Default, TypeUuid)]
 #[uuid = "463e4b8a-d555-4fc2-ba9f-4c880063ba92"]
 struct ShaderToyUniform {
-    resolution: Vec3,
+    resolution: Vec2,
     time: f32,
     time_delta: f32,
     frame: i32,
@@ -118,43 +119,45 @@ fn setup(
 
     bevy::log::info!("Finished Initialization");
 }
-fn mouse_click_system(mouse_button_input: Res<Input<MouseButton>>) {
-    if mouse_button_input.pressed(MouseButton::Left) {
-        info!("left mouse currently pressed");
-    }
-
-    if mouse_button_input.just_pressed(MouseButton::Left) {
-        info!("left mouse just pressed");
-    }
-
-    if mouse_button_input.just_released(MouseButton::Left) {
-        info!("left mouse just released");
-    }
-}
 
 /// In this system we query for the `TimeComponent` and global `Time` resource, and set
 /// `time.seconds_since_startup()` as the `value` of the `TimeComponent`. This value will be
 /// accessed by the fragment shader and used to animate the shader.
 fn animate_shader(
     _mouse_motion: EventReader<CursorMoved>,
-    mut current_frame : ResMut<CurrentFrame>,
+    mut current_frame: ResMut<CurrentFrame>,
     mouse_button: Res<Input<MouseButton>>,
     time: Res<Time>,
     windows: Res<Windows>,
     mut query: Query<&mut ShaderToyUniform>,
 ) {
+    let window = windows.iter().last().unwrap();
     let cursor_pos = if let Some(pos) = windows.iter().last().unwrap().cursor_position() {
         pos
     } else {
         Vec2::new(0.0, 0.0)
     };
 
-    bevy::log::info!("Current Frame: {:?}",current_frame.0);
+    // bevy::log::info!("Current Frame: {:?}",current_frame.0);
 
+    // Set the animated variables here
     let mut time_uniform = query.single_mut().unwrap();
     time_uniform.time = time.seconds_since_startup() as f32;
     time_uniform.frame = current_frame.0;
     time_uniform.time_delta = time.delta_seconds();
+    let now = chrono::offset::Local::now().naive_local();
+    now.year();
+    let date = now.date();
+    let time = now.time();
+    let seconds = time.hour() * time.minute() * time.second();
+
+    time_uniform.date = Vec4::new(
+        date.year() as f32,
+        date.month() as f32,
+        date.month() as f32,
+        seconds as f32,
+    );
+    time_uniform.resolution = Vec2::new(window.width(), window.height());
 
     let left = if mouse_button.pressed(MouseButton::Left) {
         1.0
