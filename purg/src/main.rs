@@ -15,7 +15,7 @@ use bevy::{
 };
 use chrono::{Datelike, NaiveDateTime, Timelike};
 
-pub mod transpiler;
+// pub mod transpiler;
 pub mod debug_systems;
 pub mod download;
 
@@ -60,8 +60,6 @@ struct ShaderToyUniform {
     sample_rate: f32,
     //channel_resolution: [Vec3; 4],
     //TODO_sampler_XX: Option<f32>,
-    value: f32,
-    another_value: f32,
 }
 
 #[derive(RenderResources, Default, TypeUuid)]

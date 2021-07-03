@@ -1,9 +1,7 @@
 use glsl::parser::Parse as _;
-use glsl::syntax::{Declaration, ExternalDeclaration, ShaderStage};
+use glsl::syntax::{Declaration, ExternalDeclaration, NonEmpty, ShaderStage, TranslationUnit};
 use crate::download::download;
 use core::fmt::Write;
-
-
 
 #[test]
 pub fn test_glsl_transpile() {
@@ -68,6 +66,39 @@ pub fn test_glsl_write(){
     println!("{:?}", out_write.0);
 }
 
+/// Creates an AST of uniforms and adds it to the final transpiled program
+#[test]
+pub fn test_glsl_uniform_insert(){
+    let glsl = "
+layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
+    float iTime;
+};
+
+layout(set = 2, binding = 1) uniform ShaderToyUniform_mouse {
+    vec4 iMouse;
+};
+
+layout(set = 2, binding = 2) uniform ShaderToyUniform_time_delta {
+    float iTimeDelta;
+};
+
+layout(set = 2, binding = 3) uniform ShaderToyUniform_frame {
+    int iFrame;
+};
+
+layout(set = 2, binding = 4) uniform ShaderToyUniform_date {
+    vec4 iDate;
+};
+
+layout(set = 2, binding = 5) uniform ShaderToyUniform_resolution {
+    vec2 iResolution;
+};
+";
+
+    let stage = ShaderStage::parse(glsl).unwrap();
+    let TranslationUnit(NonEmpty(thing)) = stage;
+    println!("{:#?}", thing[0]);
+}
 
 #[test]
 pub fn test_download_shadertoy(){
