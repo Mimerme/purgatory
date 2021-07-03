@@ -1,11 +1,8 @@
 use serde_json::{self, Value};
-
 use reqwest::blocking::Client;
-
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
-
 use std::io::{Read, Write};
 
 #[derive(Debug)]

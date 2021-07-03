@@ -15,6 +15,7 @@ use bevy::{
 };
 use chrono::{Datelike, NaiveDateTime, Timelike};
 
+pub mod transpiler;
 pub mod debug_systems;
 pub mod download;
 
@@ -103,6 +104,7 @@ fn setup(
         "time_uniform",
         RenderResourcesNode::<ShaderToyUniform>::new(true),
     );
+    render_graph.add_system_node("channel_uniforms", RenderResourcesNode::<ShadertoyChannels>::new(true));
 
     bevy::log::info!("Creating entities");
     // Spawn a quad and insert the `TimeComponent`.
@@ -158,7 +160,7 @@ fn animate_shader(
     now.year();
     let date = now.date();
     let time = now.time();
-    let seconds = time.hour() * (60 * 60) * time.minute() * 60 * time.second();
+    let seconds : u128 = (time.hour() as u128) * (60 * 60) * (time.minute() as u128) * 60 * (time.second() as u128);
 
     time_uniform.date = Vec4::new(
         date.year() as f32,
