@@ -5,7 +5,6 @@ use core::fmt::Write;
 
 #[test]
 pub fn test_glsl_transpile() {
-    bevy::log::debug!("Transpiling demo glsl");
     let glsl = "
          layout (location = 0) in vec3 pos;
          layout (location = 1) in vec4 col;
@@ -47,7 +46,6 @@ impl Write for Transpiler {
 }
 #[test]
 pub fn test_glsl_write(){
-    bevy::log::debug!("Writing glsl");
     let glsl = "
          layout (location = 0) in vec3 pos;
          layout (location = 1) in vec4 col;
@@ -55,6 +53,7 @@ pub fn test_glsl_write(){
          uniform mat4 projview;
        
          void main() {
+           
            v_col = col; // pass color to the next stage
            gl_Position = projview * vec4(pos, 1.);
          }
