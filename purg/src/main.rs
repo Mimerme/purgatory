@@ -17,7 +17,6 @@ use chrono::{Datelike, NaiveDateTime, Timelike};
 
 // pub mod transpiler;
 pub mod debug_systems;
-pub mod download;
 
 // Some bevy examples for le newbs
 // https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
@@ -39,7 +38,7 @@ pub fn main() {
         // .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
         .add_system(animate_shader.system())
-        // .add_system(debug_systems::print_asset_events.system())
+        // .add_system(debug_systems:
         // .add_system(mouse_click_system.system())
         // // .add_system(debug_systems::print_mouse_events.system())
         // .add_system(check_for_nshader_updates())
