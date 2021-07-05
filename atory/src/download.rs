@@ -22,21 +22,23 @@ impl Error for GenericError {
     }
 }
 
-pub fn download(id: &str) -> Result<(String, String), Box<dyn Error>> {
+pub fn download(id: &str, save : bool) -> Result<(String, String), Box<dyn Error>> {
     let (name, code) = get_shader_name_and_code(id)?;
 
-    File::create(&name)
-        .or_else(|_err| {
-            Err(Box::new(GenericError {
-                msg: "Error creating file when saving shader".to_string(),
-            }))
-        })?
-        .write_all(code.as_bytes())
-        .or_else(|_err| {
-            Err(Box::new(GenericError {
-                msg: "Error writing shader to file (check permissions)".to_string(),
-            }))
-        })?;
+    if save {
+        File::create(&name)
+            .or_else(|_err| {
+                Err(Box::new(GenericError {
+                    msg: "Error creating file when saving shader".to_string(),
+                }))
+            })?
+            .write_all(code.as_bytes())
+            .or_else(|_err| {
+                Err(Box::new(GenericError {
+                    msg: "Error writing shader to file (check permissions)".to_string(),
+                }))
+            })?;
+    }
 
     Ok((name, code))
 }

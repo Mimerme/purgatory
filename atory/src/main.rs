@@ -3,5 +3,5 @@ fn main() {
 }
 
 pub mod rebuild;
+pub mod rebuild_test;
 pub mod download;
-pub mod transpiler;

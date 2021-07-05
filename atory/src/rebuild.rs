@@ -1,8 +1,18 @@
-use glsl::syntax::{Declaration, ExternalDeclaration, NonEmpty, ShaderStage, TranslationUnit};
 use glsl::parser::Parse;
+use glsl::syntax::{Declaration, ExternalDeclaration, NonEmpty, ShaderStage, TranslationUnit};
 
-pub fn get_shadertoy_uniform_ast() -> NonEmpty<ExternalDeclaration> {
-    let glsl = "
+pub fn get_main() -> NonEmpty<ExternalDeclaration> {
+    let main_def = "void main(){
+
+    }";
+
+    let stage = ShaderStage::parse(main_def).unwrap();
+    let TranslationUnit(decs) = stage;
+    decs
+}
+
+pub fn get_shadertoy_defs() -> NonEmpty<ExternalDeclaration> {
+    let uniforms = "
 layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
     float iTime;
 };
@@ -28,22 +38,36 @@ layout(set = 2, binding = 5) uniform ShaderToyUniform_resolution {
 };
 ";
 
-    let stage = ShaderStage::parse(glsl).unwrap();
+    let stage = ShaderStage::parse(uniforms).unwrap();
     let TranslationUnit(decs) = stage;
     decs
 }
 
-pub fn parse_declarations(declarations : NonEmpty<ExternalDeclaration>) -> NonEmpty<ExternalDeclaration>{
+pub fn parse_declarations(
+    mut declarations: NonEmpty<ExternalDeclaration>,
+    mut shadertoy_uniforms: NonEmpty<ExternalDeclaration>,
+    mut function_defs : NonEmpty<ExternalDeclaration>,
+) -> NonEmpty<ExternalDeclaration> {
     // let NonEmpty(decs) = declarations;
     // decs.push();
-    declarations
+
+    // shadertoy_declarations.into_iter().for_each(|d| {
+    //     declarations.push(d);
+    // });
+
+    shadertoy_uniforms.extend(declarations);
+    shadertoy_uniforms.extend(function_defs);
+
+    shadertoy_uniforms
 }
 
-pub fn parse(root : TranslationUnit) -> TranslationUnit{
+pub fn parse(root: TranslationUnit) -> TranslationUnit {
     match root {
         TranslationUnit(declarations) => {
-            TranslationUnit(parse_declarations(declarations))
-        },
-        _ => {panic!("wot???")}
+            TranslationUnit(parse_declarations(declarations, get_shadertoy_defs(), get_main()))
+        }
+        _ => {
+            panic!("wot???")
+        }
     }
 }
