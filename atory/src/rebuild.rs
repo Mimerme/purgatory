@@ -59,8 +59,6 @@ pub fn get_shadertoy_defs() -> NonEmpty<ExternalDeclaration> {
 layout(location = 0) in vec2 fragCoord;
 layout(location = 0) out vec4 fragColor;
 
-layout(location = 0) out vec4 o_Target;
-
 layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
     float iTime;
 };
