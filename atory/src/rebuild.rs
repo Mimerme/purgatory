@@ -1,18 +1,66 @@
-use glsl::parser::Parse;
-use glsl::syntax::{Declaration, ExternalDeclaration, NonEmpty, ShaderStage, TranslationUnit};
+use glsl::syntax::FunctionParameterDeclaration::Named;
+use glsl::syntax::StorageQualifier::Out;
+use glsl::syntax::TypeQualifierSpec::Storage;
+use glsl::{
+    parser::Parse,
+    syntax::{
+        Declaration, ExternalDeclaration, FullySpecifiedType, FunctionPrototype, Identifier,
+        NonEmpty, ShaderStage, TranslationUnit, TypeQualifier, TypeSpecifier,
+        TypeSpecifierNonArray,
+    },
+};
+use ExternalDeclaration::FunctionDefinition;
 
-pub fn get_main() -> NonEmpty<ExternalDeclaration> {
-    let main_def = "void main(){
+/// Should rebuild a main defintion with its body as that in mainImage()
+pub fn get_main(main_image: NonEmpty<ExternalDeclaration>) -> NonEmpty<ExternalDeclaration> {
+    for dec in main_image.into_iter() {
+        match dec {
+            FunctionDefinition(def) => {
+                if def.prototype.name.0 != "mainImage"{
+                    continue;
+                }
 
-    }";
 
-    let stage = ShaderStage::parse(main_def).unwrap();
-    let TranslationUnit(decs) = stage;
-    decs
+                let proto = FunctionPrototype {
+                    ty: FullySpecifiedType {
+                        qualifier: None,
+                        ty: TypeSpecifier {
+                            ty: TypeSpecifierNonArray::Void,
+                            array_specifier: None,
+                        },
+                    },
+                    name: Identifier::new("main").unwrap(),
+                    parameters: Vec::new(),
+                };
+
+                let mut def_clone = def.clone();
+
+                def_clone.prototype = proto;
+
+                return NonEmpty(vec![ExternalDeclaration::FunctionDefinition(def_clone)]);
+            }
+            _ => continue,
+        }
+    }
+
+    NonEmpty(Vec::new())
 }
+//     let main_def = "void main(){
+
+//     }";
+
+//     let stage = ShaderStage::parse(main_def).unwrap();
+//     let TranslationUnit(decs) = stage;
+//     decs
+// }
 
 pub fn get_shadertoy_defs() -> NonEmpty<ExternalDeclaration> {
-    let uniforms = "
+    let defs = "
+layout(location = 0) in vec2 fragCoord;
+layout(location = 0) out vec4 fragColor;
+
+layout(location = 0) out vec4 o_Target;
+
 layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
     float iTime;
 };
@@ -38,15 +86,15 @@ layout(set = 2, binding = 5) uniform ShaderToyUniform_resolution {
 };
 ";
 
-    let stage = ShaderStage::parse(uniforms).unwrap();
+    let stage = ShaderStage::parse(defs).unwrap();
     let TranslationUnit(decs) = stage;
     decs
 }
 
 pub fn parse_declarations(
-    mut declarations: NonEmpty<ExternalDeclaration>,
-    mut shadertoy_uniforms: NonEmpty<ExternalDeclaration>,
-    mut function_defs : NonEmpty<ExternalDeclaration>,
+    mut begin: NonEmpty<ExternalDeclaration>,
+    mut mid: Option<NonEmpty<ExternalDeclaration>>,
+    mut end: Option<NonEmpty<ExternalDeclaration>>,
 ) -> NonEmpty<ExternalDeclaration> {
     // let NonEmpty(decs) = declarations;
     // decs.push();
@@ -55,16 +103,32 @@ pub fn parse_declarations(
     //     declarations.push(d);
     // });
 
-    shadertoy_uniforms.extend(declarations);
-    shadertoy_uniforms.extend(function_defs);
+    if let Some(mid) = mid {
+        begin.extend(mid);
+    }
+    if let Some(end) = end {
+        begin.extend(end);
+    }
 
-    shadertoy_uniforms
+    begin
 }
 
-pub fn parse(root: TranslationUnit) -> TranslationUnit {
+pub fn parse(root: TranslationUnit, transpile_main: bool) -> TranslationUnit {
     match root {
-        TranslationUnit(declarations) => {
-            TranslationUnit(parse_declarations(declarations, get_shadertoy_defs(), get_main()))
+        TranslationUnit(root_declarations) => {
+            /// NOTE: this is not scalable at anything more compilcated than a single file i thinks
+            /// Loop until we we find the main_image() def and then pass it to get its body yanked out
+            let functions = if transpile_main {
+                Some(get_main(root_declarations.clone()))
+            } else {
+                None
+            };
+
+            TranslationUnit(parse_declarations(
+                get_shadertoy_defs(),
+                Some(root_declarations),
+                functions,
+            ))
         }
         _ => {
             panic!("wot???")

@@ -27,7 +27,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     // Output to screen
     fragColor = vec4(col,1.0);
-}";
+}
+
+void main(){
+
+}
+";
 
 // #[test]
 // pub fn test_glsl_transpile() {
@@ -73,17 +78,16 @@ impl Write for Transpiler {
     }
 }
 #[test]
-pub fn test_glsl_write(){
+pub fn test_glsl_parse(){
     let stage = ShaderStage::parse(shadertoy_glsl).unwrap();
     let mut out_write = Transpiler(String::new());
-    // println!("{:?}", stage);
-    glsl::transpiler::glsl::show_translation_unit(&mut out_write, &stage);
-    println!("{:?}", out_write.0);
+    println!("{:#?}", stage);
+//     glsl::transpiler::glsl::show_translation_unit(&mut out_write, &stage);
+//     println!("{:?}", out_write.0);
 }
 
-/// Creates an AST of uniforms and adds it to the final transpiled program
 #[test]
-pub fn test_glsl_uniform_insert(){
+pub fn test_glsl_uniform_insert_defs(){
     // Stage is the input ast
     let
  stage = ShaderStage::parse(shadertoy_glsl).unwrap();
@@ -131,7 +135,71 @@ pub fn test_glsl_uniform_insert(){
     let ans = ShaderStage::parse(res).unwrap();
 
     // Rebuilt is the newly parsed AST
-    let rebuilt = rebuild::parse(stage.clone());
+    let rebuilt = rebuild::parse(stage.clone(), false);
+    // println!("{:#?}", ans);
+
+    // let mut out_write = Transpiler(String::new());
+    // glsl::transpiler::glsl::show_translation_unit(&mut out_write, &rebuilt);
+
+    // let mut ans_write = Transpiler(String::new());
+    // // glsl::transpiler::glsl::show_translation_unit(&mut ans_write, &ans);
+    // println!("Rebuilt src: {:?}", out_write.0);
+    // println!("Correct: {:?}", ans_write.0);
+    // // assert_eq!(rebuilt, ans);
+    assert_eq!(rebuilt, ans);
+}
+
+
+#[test]
+pub fn test_glsl_uniform_insert_defs_and_main(){
+    // Stage is the input ast
+    let
+ stage = ShaderStage::parse(shadertoy_glsl).unwrap();
+
+    let res = "
+     layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
+         float iTime;
+     };
+     
+     layout(set = 2, binding = 1) uniform ShaderToyUniform_mouse {
+         vec4 iMouse;
+     };
+     
+     layout(set = 2, binding = 2) uniform ShaderToyUniform_time_delta {
+         float iTimeDelta;
+     };
+     
+     layout(set = 2, binding = 3) uniform ShaderToyUniform_frame {
+         int iFrame;
+     };
+     
+     layout(set = 2, binding = 4) uniform ShaderToyUniform_date {
+         vec4 iDate;
+     };
+     
+     layout(set = 2, binding = 5) uniform ShaderToyUniform_resolution {
+         vec2 iResolution;
+     };
+
+
+    void main()
+    {
+        // Normalized pixel coordinates (from 0 to 1)
+        vec2 uv = fragCoord/iResolution.xy;
+    
+        // Time varying pixel color
+        vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
+    
+        // Output to screen
+        fragColor = vec4(col,1.0);
+    }
+    ";
+
+    // Ans is the correct AST
+    let ans = ShaderStage::parse(res).unwrap();
+
+    // Rebuilt is the newly parsed AST
+    let rebuilt = rebuild::parse(stage.clone(), true);
     // println!("{:#?}", ans);
 
     // let mut out_write = Transpiler(String::new());
@@ -158,7 +226,7 @@ pub fn write_ast_to_src(root : TranslationUnit, dest : &str){
 pub fn test_shadertoy_shader(){
     let (name, shadertoy_raw_glsl) = crate::download::download("wlVGWd", false).unwrap();
     let trans_glsl = ShaderStage::parse(shadertoy_raw_glsl).unwrap();
-    let rebuilt = rebuild::parse(trans_glsl);
+    let rebuilt = rebuild::parse(trans_glsl, true);
     write_ast_to_src(rebuilt, "test.frag");
 
     // println!("{:#?}", ans);
