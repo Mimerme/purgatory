@@ -17,7 +17,7 @@ use chrono::{Datelike, NaiveDateTime, Timelike};
 
 // pub mod transpiler;
 pub mod debug_systems;
-
+pub mod shadertoy_quad;
 // Some bevy examples for le newbs
 // https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
 
@@ -101,7 +101,6 @@ fn setup(
         "time_uniform",
         RenderResourcesNode::<ShaderToyUniform>::new(true),
     );
-    render_graph.add_system_node("channel_uniforms", RenderResourcesNode::<ShadertoyChannels>::new(true));
 
     bevy::log::info!("Creating entities");
     // Spawn a quad and insert the `TimeComponent`.
@@ -150,6 +149,7 @@ fn animate_shader(
     // Set the animated variables here
     let mut time_uniform = query.single_mut().unwrap();
     time_uniform.time = time.seconds_since_startup() as f32;
+    println!("{:?}", time_uniform.time);
     time_uniform.frame = current_frame.0;
     time_uniform.time_delta = time.delta_seconds();
 
@@ -157,7 +157,8 @@ fn animate_shader(
     now.year();
     let date = now.date();
     let time = now.time();
-    let seconds : u128 = (time.hour() as u128) * (60 * 60) * (time.minute() as u128) * 60 * (time.second() as u128);
+    let seconds: u128 =
+        (time.hour() as u128) * (60 * 60) * (time.minute() as u128) * 60 * (time.second() as u128);
 
     time_uniform.date = Vec4::new(
         date.year() as f32,

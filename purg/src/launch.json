@@ -1,0 +1,76 @@
+[
+    {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug executable 'purg'",
+        "cargo": {
+            "args": [
+                "build",
+                "--bin=purg",
+                "--package=purg"
+            ],
+            "filter": {
+                "name": "purg",
+                "kind": "bin"
+            }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}"
+    },
+    {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug unit tests in executable 'purg'",
+        "cargo": {
+            "args": [
+                "test",
+                "--no-run",
+                "--bin=purg",
+                "--package=purg"
+            ],
+            "filter": {
+                "name": "purg",
+                "kind": "bin"
+            }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}"
+    },
+    {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug executable 'atory'",
+        "cargo": {
+            "args": [
+                "build",
+                "--bin=atory",
+                "--package=atory"
+            ],
+            "filter": {
+                "name": "atory",
+                "kind": "bin"
+            }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}"
+    },
+    {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug unit tests in executable 'atory'",
+        "cargo": {
+            "args": [
+                "test",
+                "--no-run",
+                "--bin=atory",
+                "--package=atory"
+            ],
+            "filter": {
+                "name": "atory",
+                "kind": "bin"
+            }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}"
+    }
+]
