@@ -1,4 +1,6 @@
 use macroquad::prelude::*;
+use frame_counter::FrameCounter;
+
 use std::{thread, time};
 
 
@@ -52,7 +54,12 @@ async fn main() {
     let mut date : [f32; 4] = [0.0, 0.0,0.0,0.0];
     let mut resolution : [f32;2] = [0.0, 0.0];
 
+    let mut frame_counter = FrameCounter::default();
+
+
     loop {
+        frame_counter.tick();
+
         clear_background(WHITE);
         gl_use_material(material);
         draw_rectangle(0.0, 0.0, screen_width(), screen_height(), GREEN);
@@ -60,6 +67,12 @@ async fn main() {
         set_camera(&camera);
 
         // Update the uniforms on every frame here
+        let m_pos = mouse_position();
+        let l_down : f32 = if is_mouse_button_down(MouseButton::Left){ 1.0} else {0.0};
+        let r_down : f32 = if is_mouse_button_down(MouseButton::Right) {1.0} else {0.0} ;
+
+        mouse = [m_pos.0, m_pos.1, l_down, r_down];
+
         material.set_uniform("iTime", time);
         material.set_uniform("iTimeDelta", timeDelta);
         material.set_uniform("iMouse",mouse);
@@ -72,7 +85,12 @@ async fn main() {
         resolution = [screen_width(), screen_height()];
 
         thread::sleep(time::Duration::from_millis(15));
-        next_frame().await
+        next_frame().await;
+
+        frame_counter.wait_until_framerate(80f64);
+
+        println!("fps stats - {}", frame_counter);
+
     }
 
 }
