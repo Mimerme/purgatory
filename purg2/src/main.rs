@@ -9,7 +9,7 @@ enum Uniform {
     Float(f32),
 }
 
-#[macroquad::main("Shadertoy")]
+#[macroquad::main("Quadtoy")]
 async fn main() {
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
@@ -46,22 +46,18 @@ async fn main() {
         ..Default::default()
     };
 
-    let mut time : f32 = 0.0;
+    let mut time : f32 = 1.0;
     let mut timeDelta : f32 = 0.0;
     let mut mouse : [f32; 4] = [0.0, 0.0,0.0,0.0];
     let mut date : [f32; 4] = [0.0, 0.0,0.0,0.0];
     let mut resolution : [f32;2] = [0.0, 0.0];
 
     loop {
-        clear_background(RED);
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-
-        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
+        clear_background(WHITE);
+        gl_use_material(material);
+        draw_rectangle(0.0, 0.0, screen_width(), screen_height(), GREEN);
 
         set_camera(&camera);
-        gl_use_material(material);
 
         // Update the uniforms on every frame here
         material.set_uniform("iTime", time);
@@ -70,8 +66,10 @@ async fn main() {
         material.set_uniform("iDate", date);
         material.set_uniform("iResolution", resolution);
 
-        draw_plane(vec3(0., 2., 0.), vec2(5., 5.), Texture2D::empty(), WHITE);
         set_default_camera();
+
+        time += 1.0;
+        resolution = [screen_width(), screen_height()];
 
         thread::sleep(time::Duration::from_millis(15));
         next_frame().await
@@ -79,21 +77,22 @@ async fn main() {
 
 }
 
-const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 100
+const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 450
 precision lowp float;
 
 varying vec2 uv;
 
 uniform sampler2D Texture;
 uniform float iTime;
+out vec4 fragColor;
 
 void main() {
-    gl_FragColor = texture2D(Texture, uv);
-    gl_FragColor = vec4(iTime, 0.0, 0.0, 1.0);
+    //gl_FragColor = texture2D(Texture, uv);
+    fragColor = vec4(iTime / 255.0, 0.0, 0.0, 1.0);
 }
 ";
 
-const DEFAULT_VERTEX_SHADER: &'static str = "#version 100
+const DEFAULT_VERTEX_SHADER: &'static str = "#version 450
 precision lowp float;
 
 attribute vec3 position;
