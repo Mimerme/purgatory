@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 macroquad = "0.3"
 frame_counter = "0.1.2"
+chrono = "0.4.*"

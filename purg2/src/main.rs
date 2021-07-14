@@ -1,9 +1,7 @@
-use macroquad::prelude::*;
+use chrono::{Datelike, NaiveDateTime, Timelike};
 use frame_counter::FrameCounter;
-
+use macroquad::prelude::*;
 use std::{thread, time};
-
-
 enum Uniform {
     Vec2(f32, f32),
     Vec3(f32, f32, f32),
@@ -15,7 +13,7 @@ enum Uniform {
 async fn main() {
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
-    let mut uniforms : Vec<(String, UniformType)> = vec![
+    let mut uniforms: Vec<(String, UniformType)> = vec![
         ("iTime".to_string(), UniformType::Float1),
         ("iTimeDelta".to_string(), UniformType::Float1),
         ("iFrame".to_string(), UniformType::Int1),
@@ -48,14 +46,14 @@ async fn main() {
         ..Default::default()
     };
 
-    let mut time : f32 = 1.0;
-    let mut timeDelta : f32 = 0.0;
-    let mut mouse : [f32; 4] = [0.0, 0.0,0.0,0.0];
-    let mut date : [f32; 4] = [0.0, 0.0,0.0,0.0];
-    let mut resolution : [f32;2] = [0.0, 0.0];
+    let mut time: f32 = 1.0;
+    let mut timeDelta: f32 = 0.0;
+    let mut mouse: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
+    let mut date: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
+    let mut resolution: [f32; 2] = [0.0, 0.0];
+    let mut frame = 0;
 
     let mut frame_counter = FrameCounter::default();
-
 
     loop {
         frame_counter.tick();
@@ -68,45 +66,75 @@ async fn main() {
 
         // Update the uniforms on every frame here
         let m_pos = mouse_position();
-        let l_down : f32 = if is_mouse_button_down(MouseButton::Left){ 1.0} else {0.0};
-        let r_down : f32 = if is_mouse_button_down(MouseButton::Right) {1.0} else {0.0} ;
-
-        mouse = [m_pos.0, m_pos.1, l_down, r_down];
+        let l_down: f32 = if is_mouse_button_down(MouseButton::Left) {
+            1.0
+        } else {
+            0.0
+        };
+        let r_down: f32 = if is_mouse_button_down(MouseButton::Right) {
+            1.0
+        } else {
+            0.0
+        };
 
         material.set_uniform("iTime", time);
         material.set_uniform("iTimeDelta", timeDelta);
-        material.set_uniform("iMouse",mouse);
+        material.set_uniform("iMouse", mouse);
         material.set_uniform("iDate", date);
         material.set_uniform("iResolution", resolution);
+        material.set_uniform("iFrame", frame);
 
         set_default_camera();
 
-        time += 1.0;
+        time += frame_counter.frame_time().as_secs_f32();
+        timeDelta = frame_counter.frame_time().as_secs_f32();
+        frame += 1;
         resolution = [screen_width(), screen_height()];
+        mouse = [m_pos.0, m_pos.1, l_down, r_down];
+        let now = chrono::offset::Local::now().naive_local();
+        let chrono_date = now.date();
+        let time = now.time();
+        let seconds: u128 = (time.hour() as u128)
+            * (60 * 60)
+            * (time.minute() as u128)
+            * 60
+            * (time.second() as u128);
+        date = [
+            chrono_date.year() as f32,
+            chrono_date.month() as f32,
+            chrono_date.day() as f32,
+            seconds as f32,
+        ];
 
-        thread::sleep(time::Duration::from_millis(15));
         next_frame().await;
-
-        frame_counter.wait_until_framerate(80f64);
+        frame_counter.wait_until_framerate(60f64);
 
         println!("fps stats - {}", frame_counter);
-
     }
-
 }
 
 const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 450
 precision lowp float;
 
-varying vec2 uv;
+in vec2 fragCoord;
 
 uniform sampler2D Texture;
 uniform float iTime;
+uniform vec2 iResolution;
 out vec4 fragColor;
 
 void main() {
     //gl_FragColor = texture2D(Texture, uv);
-    fragColor = vec4(iTime / 255.0, 0.0, 0.0, 1.0);
+    //fragColor = vec4(iTime / 255.0, 0.0, 0.0, 1.0);
+
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragCoord/iResolution.xy;
+
+    // Time varying pixel color
+    vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
+
+    // Output to screen
+    fragColor = vec4(col,1.0);
 }
 ";
 
@@ -117,6 +145,7 @@ attribute vec3 position;
 attribute vec2 texcoord;
 
 varying vec2 uv;
+out vec2 fragCoord;
 
 uniform mat4 Model;
 uniform mat4 Projection;
@@ -124,7 +153,7 @@ uniform float iTime;
 
 void main() {
     gl_Position = Projection * Model * vec4(position, 1);
+    fragCoord = position.xy;
     uv = texcoord;
 }
 ";
-
