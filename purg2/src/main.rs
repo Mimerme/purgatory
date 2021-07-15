@@ -1,7 +1,10 @@
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use frame_counter::FrameCounter;
+use macroquad::models::Vertex;
 use macroquad::prelude::*;
 use std::{thread, time};
+use macroquad::math::{Vec3, Vec2};
+
 enum Uniform {
     Vec2(f32, f32),
     Vec3(f32, f32, f32),
@@ -42,7 +45,7 @@ async fn main() {
     let mut camera = Camera3D {
         position: vec3(-15., 15., -5.),
         up: vec3(0., 1., 0.),
-        target: vec3(0., 5., -5.),
+        target: vec3(0., 0., 0.),
         ..Default::default()
     };
 
@@ -50,17 +53,31 @@ async fn main() {
     let mut timeDelta: f32 = 0.0;
     let mut mouse: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
     let mut date: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
-    let mut resolution: [f32; 2] = [0.0, 0.0];
+    let mut resolution: [f32; 2] = [screen_width(), screen_height()];
     let mut frame = 0;
 
     let mut frame_counter = FrameCounter::default();
 
+
     loop {
+        let (x, y, w, h) = (0.0f32, 0.0f32, resolution[0], resolution[1]);
         frame_counter.tick();
 
         clear_background(WHITE);
         gl_use_material(material);
-        draw_rectangle(0.0, 0.0, screen_width(), screen_height(), GREEN);
+        //draw_rectangle(0.0, 0.0, screen_width(), screen_height(), GREEN);
+
+        let shadertoy_mesh = Mesh{
+            vertices: vec![
+            Vertex{position: Vec3::new(x, y, 0.), uv: Vec2::new(0.0, 0.0), color: GREEN},
+            Vertex{position: Vec3::new(x + w, y, 0.), uv: Vec2::new(1.0, 0.0), color: GREEN},
+            Vertex{position: Vec3::new(x + w, y + h, 0.), uv: Vec2::new(1.0, 1.0), color: GREEN},
+            Vertex{position: Vec3::new(x, y + h, 0.), uv: Vec2::new(0.0, 1.0), color: GREEN}],
+            indices: vec![0, 1, 2, 0, 2, 3],
+            texture: None,
+
+        };
+        draw_mesh(&shadertoy_mesh);
 
         set_camera(&camera);
 
@@ -130,11 +147,12 @@ void main() {
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragCoord/iResolution.xy;
 
+
     // Time varying pixel color
     vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
 
     // Output to screen
-    fragColor = vec4(col,1.0);
+    fragColor = vec4(uv,0.0, 1.0);
 }
 ";
 
@@ -145,6 +163,7 @@ attribute vec3 position;
 attribute vec2 texcoord;
 
 varying vec2 uv;
+uniform vec2 iResolution;
 out vec2 fragCoord;
 
 uniform mat4 Model;
@@ -152,8 +171,10 @@ uniform mat4 Projection;
 uniform float iTime;
 
 void main() {
-    gl_Position = Projection * Model * vec4(position, 1);
+    //gl_Position = Model * Projection * vec4(position, 1);
     fragCoord = position.xy;
+    gl_Position = vec4(((position.xy / iResolution) * 2) - 1, 0.0, 1);
     uv = texcoord;
 }
 ";
+
