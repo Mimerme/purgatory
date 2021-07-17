@@ -65,13 +65,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 }
 */
 
-struct Transpiler(String);
-impl Write for Transpiler {
-    fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        self.0.push_str(s);
-        Ok(())
-    }
-}
+
 #[test]
 pub fn test_glsl_write(){
     let stage = ShaderStage::parse(glsl).unwrap();
@@ -88,29 +82,12 @@ pub fn test_glsl_uniform_insert(){
     let stage = ShaderStage::parse(glsl).unwrap();
 
     let res = "
-     layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
-         float iTime;
-     };
-     
-     layout(set = 2, binding = 1) uniform ShaderToyUniform_mouse {
-         vec4 iMouse;
-     };
-     
-     layout(set = 2, binding = 2) uniform ShaderToyUniform_time_delta {
-         float iTimeDelta;
-     };
-     
-     layout(set = 2, binding = 3) uniform ShaderToyUniform_frame {
-         int iFrame;
-     };
-     
-     layout(set = 2, binding = 4) uniform ShaderToyUniform_date {
-         vec4 iDate;
-     };
-     
-     layout(set = 2, binding = 5) uniform ShaderToyUniform_resolution {
-         vec2 iResolution;
-     };
+    uniform float iTime;
+    uniform vec4 iMouse;
+    uniform float iTimeDelta;
+    uniform int iFrame;
+    uniform vec4 iDate;
+    uniform vec2 iResolution;
 
 
     void mainImage( out vec4 fragColor, in vec2 fragCoord )

@@ -9,4 +9,16 @@ edition = "2018"
 glsl = "6.0.0"
 serde_json = "1.0.59"
 reqwest = {version = "0.11", features = ["blocking"]}
+# macroquad = {path="../../macroquad"}
+# egui-macroquad = "0.5.0"
+egui = "0.13.1"
+egui-macroquad = "0.5.0"
+macroquad = "0.3.6"
 
+[[bin]]
+name ="editor"
+path = "src/editor.rs"
+
+[lib]
+name = "atory"
+path = "src/lib.rs"

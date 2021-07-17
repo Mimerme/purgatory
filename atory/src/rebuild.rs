@@ -21,7 +21,7 @@ pub fn get_main(main_image: NonEmpty<ExternalDeclaration>) -> NonEmpty<ExternalD
                 }
 
 
-                let proto = FunctionPrototype {
+            let proto = FunctionPrototype {
                     ty: FullySpecifiedType {
                         qualifier: None,
                         ty: TypeSpecifier {
@@ -56,32 +56,14 @@ pub fn get_main(main_image: NonEmpty<ExternalDeclaration>) -> NonEmpty<ExternalD
 
 pub fn get_shadertoy_defs() -> NonEmpty<ExternalDeclaration> {
     let defs = "
-layout(location = 0) in vec2 fragCoord;
-layout(location = 0) out vec4 fragColor;
+    in vec2 fragCoord;
+    out vec4 fragColor;
 
-layout(set = 2, binding = 0) uniform ShaderToyUniform_time {
-    float iTime;
-};
-
-layout(set = 2, binding = 1) uniform ShaderToyUniform_mouse {
-    vec4 iMouse;
-};
-
-layout(set = 2, binding = 2) uniform ShaderToyUniform_time_delta {
-    float iTimeDelta;
-};
-
-layout(set = 2, binding = 3) uniform ShaderToyUniform_frame {
-    int iFrame;
-};
-
-layout(set = 2, binding = 4) uniform ShaderToyUniform_date {
-    vec4 iDate;
-};
-
-layout(set = 2, binding = 5) uniform ShaderToyUniform_resolution {
-    vec2 iResolution;
-};
+    uniform vec4 iMouse;
+    uniform float iTimeDelta;
+    uniform int iFrame;
+    uniform vec4 iDate;
+    uniform vec2 iResolution;
 ";
 
     let stage = ShaderStage::parse(defs).unwrap();
