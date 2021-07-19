@@ -7,7 +7,24 @@ edition = "2018"
 
 [dependencies]
 bevy = "0.5.0"
+bevy_app = "0.5.0"
+bevy_winit = "0.5.0"
+bevy_wgpu = "0.5.0"
+bevy_log = "0.5.0"
+bevy_core = "0.5.0"
+bevy_transform = "0.5.0"
+bevy_input = "0.5.0"
+bevy_window = "0.5.0"
+bevy_asset = "0.5.0"
+bevy_scene = "0.5.0"
+bevy_render = "0.5.0"
+
+bevy_gilrs = "0.5.0"
+bevy_pbr = "0.5.0"
+
+bevy_diagnostic = "0.5.0"
 reqwest = {version = "0.11", features = ["blocking"]}
 serde_json = "1.0.59"
 chrono = "0.4.*"
 glsl = "6.0.0"
+

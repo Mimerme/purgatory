@@ -13,11 +13,16 @@ use bevy::{
         shader::ShaderStages,
     },
 };
+use bevy_render::camera::ScalingMode;
 use chrono::{Datelike, NaiveDateTime, Timelike};
+
+use crate::shadertoy_pipeline::shadertoy_pipeline;
 
 // pub mod transpiler;
 pub mod debug_systems;
+mod purgatory_plugin;
 pub mod shadertoy_quad;
+pub mod shadertoy_pipeline;
 // Some bevy examples for le newbs
 // https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
 
@@ -29,7 +34,20 @@ struct CurrentFrame(i32);
 pub fn main() {
     App::build()
         .insert_resource(CurrentFrame(0))
-        .add_plugins(DefaultPlugins)
+        .insert_resource(WindowDescriptor {
+            title: "I am Window".to_string(),
+            width: 800.,
+            height: 450.,
+            vsync: true,
+            ..Default::default()
+        })
+        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
+        .insert_resource(bevy::wgpu::WgpuOptions {
+            backend: bevy::wgpu::WgpuBackend::Vulkan,
+            ..Default::default()
+        })
+        .add_plugins(purgatory_plugin::PurgatoryPlugins)
+        // .add_plugins(DefaultPlugins)
         // .add_plugin(InputPlugin)
         .add_asset::<Shader>()
         .add_asset::<ShadertoyChannels>()
@@ -78,15 +96,19 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut channels: ResMut<Assets<ShadertoyChannels>>,
     mut render_graph: ResMut<RenderGraph>,
+    mut windows: ResMut<Windows>,
 ) {
     bevy::log::info!("Creating render pipeline");
     asset_server.watch_for_changes().unwrap();
 
     // Create a new shader pipeline.
-    let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
+    let pipeline_descriptor = shadertoy_pipeline(ShaderStages {
         vertex: asset_server.load("shaders/demo.vert"),
         fragment: Some(asset_server.load("shaders/demo.frag")),
-    }));
+    });
+
+    println!("{:#?}", pipeline_descriptor.get_layout());
+    let pipeline_handle = pipelines.add(pipeline_descriptor);
 
     channels.add(ShadertoyChannels {
         channel0: Some(asset_server.load("noise.png")),
@@ -103,10 +125,16 @@ fn setup(
     );
 
     bevy::log::info!("Creating entities");
+    let window = windows.get_primary_mut().unwrap();
+
     // Spawn a quad and insert the `TimeComponent`.
     commands
         .spawn_bundle(MeshBundle {
-            mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::new(13.0, 7.0)))),
+            //mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::new(1.0, 1.0)))),
+            mesh: meshes.add(Mesh::from(shadertoy_quad::Quad::new(
+                Vec2::new(800.0, 450.0),
+                Vec2::new(window.width(), window.height()),
+            ))),
             render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::new(
                 pipeline_handle,
             )]),
@@ -116,10 +144,15 @@ fn setup(
         .insert(ShaderToyUniform::default());
 
     // Spawn a camera.
-    commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
-    });
+    // commands.spawn_bundle(PerspectiveCameraBundle {
+    //     transform: Transform::from_xyz(0.0, 0.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+    //     ..Default::default()
+    // });
+
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.orthographic_projection.scaling_mode = ScalingMode::WindowSize;
+
+    commands.spawn_bundle(camera);
 
     bevy::log::info!("Finished Initialization");
 }
@@ -149,7 +182,7 @@ fn animate_shader(
     // Set the animated variables here
     let mut time_uniform = query.single_mut().unwrap();
     time_uniform.time = time.seconds_since_startup() as f32;
-    println!("{:?}", time_uniform.time);
+    //println!("{:?}", time_uniform.time);
     time_uniform.frame = current_frame.0;
     time_uniform.time_delta = time.delta_seconds();
 

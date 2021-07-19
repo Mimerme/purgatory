@@ -89,7 +89,7 @@ async fn main() {
 
             let mut ast_txt = String::new();
             glsl::transpiler::glsl::show_translation_unit(&mut ast_txt,&shader_ast_tu);
-            egui::Window::new("AST Expression").show(egui_ctx, |ui| {
+            egui::Window::new("AST Expression").scroll(true).show(egui_ctx, |ui| {
                 ui.code_editor(&mut ast_txt);
             });
         });

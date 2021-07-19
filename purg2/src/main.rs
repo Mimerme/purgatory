@@ -2,6 +2,7 @@ use chrono::{Datelike, NaiveDateTime, Timelike};
 use frame_counter::FrameCounter;
 use macroquad::models::Vertex;
 use macroquad::prelude::*;
+use purgtwo::QuadToy;
 use std::{thread, time};
 use macroquad::math::{Vec3, Vec2};
 
@@ -12,24 +13,21 @@ enum Uniform {
     Float(f32),
 }
 
+const DEBUG : bool = false;
+
 #[macroquad::main("Quadtoy")]
 async fn main() {
-    let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
-    let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
-    let mut uniforms: Vec<(String, UniformType)> = vec![
-        ("iTime".to_string(), UniformType::Float1),
-        ("iTimeDelta".to_string(), UniformType::Float1),
-        ("iFrame".to_string(), UniformType::Int1),
-        ("iDate".to_string(), UniformType::Float4),
-        ("iMouse".to_string(), UniformType::Float4),
-        ("iResolution".to_string(), UniformType::Float2),
-    ];
+    let args: Vec<String> = std::env::args().collect();
+    let frag_path = &args[1];
 
-    let pipeline_params = PipelineParams {
-        depth_write: true,
-        depth_test: Comparison::LessOrEqual,
-        ..Default::default()
-    };
+    // let shader_base_path = args[1];
+    // let vert_path = format!("{}.vert", shader_base_path);
+    // let frag_path = format!("{}.frag", shader_base_path);
+    //let vert_shader = std::fs::read_to_string(vert_path);
+    let frag_shader = std::fs::read_to_string(frag_path).unwrap();
+
+    let mut fragment_shader = frag_shader;
+    let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
 
     let mut material = load_material(
         &vertex_shader,
@@ -40,93 +38,34 @@ async fn main() {
             ..Default::default()
         },
     )
-    .unwrap();
+        .unwrap();
 
-    let mut camera = Camera3D {
-        position: vec3(-15., 15., -5.),
-        up: vec3(0., 1., 0.),
-        target: vec3(0., 0., 0.),
-        ..Default::default()
-    };
+    let mut quadtoy = QuadToy::new(material);
 
-    let mut time: f32 = 1.0;
+    let mut time: f32 = 0.0;
     let mut timeDelta: f32 = 0.0;
     let mut mouse: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
     let mut date: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
     let mut resolution: [f32; 2] = [screen_width(), screen_height()];
     let mut frame = 0;
 
-    let mut frame_counter = FrameCounter::default();
-
-
     loop {
         let (x, y, w, h) = (0.0f32, 0.0f32, resolution[0], resolution[1]);
-        frame_counter.tick();
+        quadtoy.framecounter.tick();
 
         clear_background(WHITE);
         gl_use_material(material);
         //draw_rectangle(0.0, 0.0, screen_width(), screen_height(), GREEN);
 
-        let shadertoy_mesh = Mesh{
-            vertices: vec![
-            Vertex{position: Vec3::new(x, y, 0.), uv: Vec2::new(0.0, 0.0), color: GREEN},
-            Vertex{position: Vec3::new(x + w, y, 0.), uv: Vec2::new(1.0, 0.0), color: GREEN},
-            Vertex{position: Vec3::new(x + w, y + h, 0.), uv: Vec2::new(1.0, 1.0), color: GREEN},
-            Vertex{position: Vec3::new(x, y + h, 0.), uv: Vec2::new(0.0, 1.0), color: GREEN}],
-            indices: vec![0, 1, 2, 0, 2, 3],
-            texture: None,
-
-        };
-        draw_mesh(&shadertoy_mesh);
-
-        set_camera(&camera);
+        quadtoy.draw();
 
         // Update the uniforms on every frame here
-        let m_pos = mouse_position();
-        let l_down: f32 = if is_mouse_button_down(MouseButton::Left) {
-            1.0
-        } else {
-            0.0
-        };
-        let r_down: f32 = if is_mouse_button_down(MouseButton::Right) {
-            1.0
-        } else {
-            0.0
-        };
-
-        material.set_uniform("iTime", time);
-        material.set_uniform("iTimeDelta", timeDelta);
-        material.set_uniform("iMouse", mouse);
-        material.set_uniform("iDate", date);
-        material.set_uniform("iResolution", resolution);
-        material.set_uniform("iFrame", frame);
-
+        quadtoy.update();
         set_default_camera();
 
-        time += frame_counter.frame_time().as_secs_f32();
-        timeDelta = frame_counter.frame_time().as_secs_f32();
-        frame += 1;
-        resolution = [screen_width(), screen_height()];
-        mouse = [m_pos.0, m_pos.1, l_down, r_down];
-        let now = chrono::offset::Local::now().naive_local();
-        let chrono_date = now.date();
-        let time = now.time();
-        let seconds: u128 = (time.hour() as u128)
-            * (60 * 60)
-            * (time.minute() as u128)
-            * 60
-            * (time.second() as u128);
-        date = [
-            chrono_date.year() as f32,
-            chrono_date.month() as f32,
-            chrono_date.day() as f32,
-            seconds as f32,
-        ];
 
         next_frame().await;
-        frame_counter.wait_until_framerate(60f64);
-
-        println!("fps stats - {}", frame_counter);
+        quadtoy.framecounter.wait_until_framerate(60f64);
     }
 }
 
