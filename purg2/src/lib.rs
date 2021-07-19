@@ -5,14 +5,13 @@ use macroquad::models::Vertex;
 use macroquad::prelude::*;
 
 pub struct QuadToy {
-    pp: PipelineParams,
     mat: Material,
     cam: Camera3D,
     time: f32,
     timeDelta: f32,
     mouse: [f32; 4],
     date: [f32; 4],
-    resolution: [f32; 2],
+    pub resolution: [f32; 2],
     frame: u32,
     pub framecounter : FrameCounter,
 }
@@ -29,11 +28,6 @@ const TOY_UNIFORMS: [(&'static str, UniformType); 6] = [
 impl QuadToy {
     pub fn new(material: Material) -> Self {
         QuadToy {
-            pp: PipelineParams {
-                depth_write: true,
-                depth_test: Comparison::LessOrEqual,
-                ..Default::default()
-            },
             mat: material,
             cam: Camera3D {
                 position: vec3(-15., 15., -5.),
@@ -125,7 +119,7 @@ impl QuadToy {
             texture: None,
         };
 
-        set_camera(&self.cam);
         draw_mesh(&shadertoy_mesh);
+        set_camera(&self.cam);
     }
 }

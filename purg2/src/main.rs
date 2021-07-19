@@ -2,7 +2,7 @@ use chrono::{Datelike, NaiveDateTime, Timelike};
 use frame_counter::FrameCounter;
 use macroquad::models::Vertex;
 use macroquad::prelude::*;
-use purgtwo::QuadToy;
+use purgtwo::{QuadToy};
 use std::{thread, time};
 use macroquad::math::{Vec3, Vec2};
 
@@ -33,29 +33,31 @@ async fn main() {
         &vertex_shader,
         &fragment_shader,
         MaterialParams {
-            pipeline_params,
-            uniforms: uniforms.clone(),
+            pipeline_params: PipelineParams {
+                depth_write: true,
+                depth_test: Comparison::LessOrEqual,
+                ..Default::default()
+            },
+            uniforms: vec![
+    ("iTime".to_string(), UniformType::Float1),
+    ("iTimeDelta".to_string(), UniformType::Float1),
+    ("iFrame".to_string(), UniformType::Int1),
+    ("iDate".to_string(), UniformType::Float4),
+    ("iMouse".to_string(), UniformType::Float4),
+    ("iResolution".to_string(), UniformType::Float2),
+],
             ..Default::default()
         },
     )
         .unwrap();
 
+
     let mut quadtoy = QuadToy::new(material);
 
-    let mut time: f32 = 0.0;
-    let mut timeDelta: f32 = 0.0;
-    let mut mouse: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
-    let mut date: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
-    let mut resolution: [f32; 2] = [screen_width(), screen_height()];
-    let mut frame = 0;
 
     loop {
-        let (x, y, w, h) = (0.0f32, 0.0f32, resolution[0], resolution[1]);
+        let (x, y, w, h) = (0.0f32, 0.0f32, quadtoy.resolution[0], quadtoy.resolution[1]);
         quadtoy.framecounter.tick();
-
-        clear_background(WHITE);
-        gl_use_material(material);
-        //draw_rectangle(0.0, 0.0, screen_width(), screen_height(), GREEN);
 
         quadtoy.draw();
 
