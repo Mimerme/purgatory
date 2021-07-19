@@ -1,5 +1,6 @@
 [package]
-name = "purg2"
+name = "purg"
+description = "Shadertoy Rendering Frontend"
 version = "0.1.0"
 edition = "2018"
 

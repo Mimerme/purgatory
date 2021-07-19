@@ -11,12 +11,12 @@ Copy the template file and start with one of the entry points
 Shadertoy primarily works as 
 
 
-| **Data Type**   | **Shadertoy Name** | **Waterwheel Name** | **Documentation**
-| ----------- | ----------- | ----------- | ------------|
-| Vec4        | iMouse     | mouse         | Vec4(mouse_x, mouse_y, left_down, right_down)
-| float       | iTime      | time          | playback time (in seconds)
-| float       | iTimeDelta | time_delta    | playback time (in seconds)
-| int         | iFrame     | current_frame | shader playback frame
-| Vec4        | iDate      | current_frame | Vec4(year, month, day, seconds) 
-| Vec2        | iResolution | resolution | Vec2(window_width, window_height) (in pixels)
+| **Data Type**   | **Uniform Name** | **Documentation**
+| ----------- | ----------- | ------------|
+| Vec4        | iMouse      | Vec4(mouse_x, mouse_y, left_down, right_down)
+| float       | iTime       | playback time (in seconds)
+| float       | iTimeDelta  | playback time (in seconds)
+| int         | iFrame      | shader playback frame
+| Vec4        | iDate       | Vec4(year, month, day, seconds) 
+| Vec2        | iResolution | Vec2(window_width, window_height) (in pixels)
 

@@ -1,5 +1,6 @@
 [package]
 name = "atory"
+description = "Glsl ShaderToy AST parsing backend"
 version = "0.1.0"
 edition = "2018"
 
