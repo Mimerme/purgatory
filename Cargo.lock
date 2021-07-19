@@ -194,7 +194,7 @@ dependencies = [
  "egui",
  "egui-macroquad",
  "glsl",
- "macroquad 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "macroquad",
  "reqwest",
  "serde_json",
 ]
@@ -1358,7 +1358,7 @@ checksum = "c4419da8b0e8f52063f96173c3e8cbf96794964da9cfdcd07a974c80b1fb0a2f"
 dependencies = [
  "egui",
  "egui-miniquad",
- "macroquad 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "macroquad",
 ]
 
 [[package]]
@@ -2445,22 +2445,6 @@ dependencies = [
 [[package]]
 name = "macroquad"
 version = "0.3.7"
-dependencies = [
- "audir-sles",
- "audrey",
- "bumpalo",
- "fontdue",
- "glam 0.14.0",
- "image",
- "macroquad_macro 0.1.5",
- "miniquad",
- "quad-rand",
- "rodio",
-]
-
-[[package]]
-name = "macroquad"
-version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16bd13dedc8e6ce55bf78e1fa261529bea1bed5387f838e763d66b0d6a8b9485"
 dependencies = [
@@ -2470,15 +2454,11 @@ dependencies = [
  "fontdue",
  "glam 0.14.0",
  "image",
- "macroquad_macro 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "macroquad_macro",
  "miniquad",
  "quad-rand",
  "rodio",
 ]
-
-[[package]]
-name = "macroquad_macro"
-version = "0.1.5"
 
 [[package]]
 name = "macroquad_macro"
@@ -3233,7 +3213,7 @@ dependencies = [
  "frame_counter",
  "imgui",
  "imnodes",
- "macroquad 0.3.7",
+ "macroquad",
 ]
 
 [[package]]

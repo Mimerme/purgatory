@@ -17,7 +17,6 @@ async fn main() {
         clear_background(WHITE);
 
         // Process keys, mouse etc.
-
         egui_macroquad::ui(|egui_ctx| {
             egui::Window::new("Glsl AST")
                 .scroll(true)

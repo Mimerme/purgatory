@@ -1,217 +1,95 @@
-use bevy::{
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
-    window::CursorMoved,
-};
-use bevy::{
-    reflect::TypeUuid,
-    render::{
-        mesh::shape,
-        pipeline::{PipelineDescriptor, RenderPipeline},
-        render_graph::{base, RenderGraph, RenderResourcesNode},
-        renderer::RenderResources,
-        shader::ShaderStages,
-    },
-};
-use bevy_render::camera::ScalingMode;
 use chrono::{Datelike, NaiveDateTime, Timelike};
+use frame_counter::FrameCounter;
+use macroquad::math::{Vec2, Vec3};
+use macroquad::models::Vertex;
+use macroquad::prelude::*;
+use purgtwo::*;
+use std::{thread, time};
 
-use crate::shadertoy_pipeline::shadertoy_pipeline;
-
-// pub mod transpiler;
-pub mod debug_systems;
-mod purgatory_plugin;
-pub mod shadertoy_quad;
-pub mod shadertoy_pipeline;
-// Some bevy examples for le newbs
-// https://github.com/bevyengine/bevy/blob/main/examples/shader/hot_shader_reloading.rs
-
-#[derive(Default)]
-struct CurrentFrame(i32);
-
-/// This example shows how to animate a shader, by passing the global `time.seconds_since_startup()`
-/// via a 'TimeComponent` to the shader.
-pub fn main() {
-    App::build()
-        .insert_resource(CurrentFrame(0))
-        .insert_resource(WindowDescriptor {
-            title: "I am Window".to_string(),
-            width: 800.,
-            height: 450.,
-            vsync: true,
-            ..Default::default()
-        })
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .insert_resource(bevy::wgpu::WgpuOptions {
-            backend: bevy::wgpu::WgpuBackend::Vulkan,
-            ..Default::default()
-        })
-        .add_plugins(purgatory_plugin::PurgatoryPlugins)
-        // .add_plugins(DefaultPlugins)
-        // .add_plugin(InputPlugin)
-        .add_asset::<Shader>()
-        .add_asset::<ShadertoyChannels>()
-        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        // Adds a system that prints diagnostics to the console
-        // .add_plugin(LogDiagnosticsPlugin::default())
-        .add_startup_system(setup.system())
-        .add_system(animate_shader.system())
-        // .add_system(debug_systems:
-        // .add_system(mouse_click_system.system())
-        // // .add_system(debug_systems::print_mouse_events.system())
-        // .add_system(check_for_nshader_updates())
-        .run();
+enum Uniform {
+    Vec2(f32, f32),
+    Vec3(f32, f32, f32),
+    Vec4(f32, f32, f32, f32),
+    Float(f32),
 }
 
-#[derive(RenderResources, Default, TypeUuid)]
-#[uuid = "463e4b8a-d555-4fc2-ba9f-4c880063ba92"]
-struct ShaderToyUniform {
-    resolution: Vec2,
-    time: f32,
-    time_delta: f32,
-    frame: i32,
-    channel_time: Vec4,
-    //channel_time: [f32; 4],
-    mouse: Vec4,
-    date: Vec4,
-    sample_rate: f32,
-    //channel_resolution: [Vec3; 4],
-    //TODO_sampler_XX: Option<f32>,
+const DEBUG: bool = false;
+
+#[macroquad::main("Quadtoy")]
+async fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let frag_path = &args[1];
+
+    // let shader_base_path = args[1];
+    // let vert_path = format!("{}.vert", shader_base_path);
+    // let frag_path = format!("{}.frag", shader_base_path);
+    //let vert_shader = std::fs::read_to_string(vert_path);
+    let frag_shader = std::fs::read_to_string(frag_path).unwrap();
+
+    let mut fragment_shader = frag_shader;
+    let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
+
+    let mut quadtoy = QuadToy::new(default_material(vertex_shader, fragment_shader));
+
+    loop {
+        let (x, y, w, h) = (0.0f32, 0.0f32, quadtoy.resolution[0], quadtoy.resolution[1]);
+        quadtoy.framecounter.tick();
+
+        quadtoy.draw();
+
+        // Update the uniforms on every frame here
+        quadtoy.update();
+        set_default_camera();
+
+        next_frame().await;
+        quadtoy.framecounter.wait_until_framerate(60f64);
+    }
 }
 
-#[derive(RenderResources, Default, TypeUuid)]
-#[uuid = "93fb26fc-6c05-489b-9029-601edf703b6b"]
-struct ShadertoyChannels {
-    pub channel0: Option<Handle<Texture>>,
-    pub channel1: Option<Handle<Texture>>,
-    pub channel2: Option<Handle<Texture>>,
-    pub channel3: Option<Handle<Texture>>,
+const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 450
+precision lowp float;
+
+in vec2 fragCoord;
+
+uniform sampler2D Texture;
+uniform float iTime;
+uniform vec2 iResolution;
+out vec4 fragColor;
+
+void main() {
+    //gl_FragColor = texture2D(Texture, uv);
+    //fragColor = vec4(iTime / 255.0, 0.0, 0.0, 1.0);
+
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragCoord/iResolution.xy;
+
+
+    // Time varying pixel color
+    vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
+
+    // Output to screen
+    fragColor = vec4(uv,0.0, 1.0);
 }
+";
 
-fn setup(
-    mut commands: Commands,
-    asset_server: ResMut<AssetServer>,
-    _shaders: ResMut<Assets<Shader>>,
-    mut pipelines: ResMut<Assets<PipelineDescriptor>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut channels: ResMut<Assets<ShadertoyChannels>>,
-    mut render_graph: ResMut<RenderGraph>,
-    mut windows: ResMut<Windows>,
-) {
-    bevy::log::info!("Creating render pipeline");
-    asset_server.watch_for_changes().unwrap();
+const DEFAULT_VERTEX_SHADER: &'static str = "#version 450
+precision lowp float;
 
-    // Create a new shader pipeline.
-    let pipeline_descriptor = shadertoy_pipeline(ShaderStages {
-        vertex: asset_server.load("shaders/demo.vert"),
-        fragment: Some(asset_server.load("shaders/demo.frag")),
-    });
+attribute vec3 position;
+attribute vec2 texcoord;
 
-    println!("{:#?}", pipeline_descriptor.get_layout());
-    let pipeline_handle = pipelines.add(pipeline_descriptor);
+varying vec2 uv;
+uniform vec2 iResolution;
+out vec2 fragCoord;
 
-    channels.add(ShadertoyChannels {
-        channel0: Some(asset_server.load("noise.png")),
-        channel1: Some(asset_server.load("noise.png")),
-        channel2: Some(asset_server.load("noise.png")),
-        channel3: Some(asset_server.load("noise.png")),
-    });
+uniform mat4 Model;
+uniform mat4 Projection;
+uniform float iTime;
 
-    // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
-    // shader.
-    render_graph.add_system_node(
-        "time_uniform",
-        RenderResourcesNode::<ShaderToyUniform>::new(true),
-    );
-
-    bevy::log::info!("Creating entities");
-    let window = windows.get_primary_mut().unwrap();
-
-    // Spawn a quad and insert the `TimeComponent`.
-    commands
-        .spawn_bundle(MeshBundle {
-            //mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::new(1.0, 1.0)))),
-            mesh: meshes.add(Mesh::from(shadertoy_quad::Quad::new(
-                Vec2::new(800.0, 450.0),
-                Vec2::new(window.width(), window.height()),
-            ))),
-            render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::new(
-                pipeline_handle,
-            )]),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            ..Default::default()
-        })
-        .insert(ShaderToyUniform::default());
-
-    // Spawn a camera.
-    // commands.spawn_bundle(PerspectiveCameraBundle {
-    //     transform: Transform::from_xyz(0.0, 0.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-    //     ..Default::default()
-    // });
-
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.orthographic_projection.scaling_mode = ScalingMode::WindowSize;
-
-    commands.spawn_bundle(camera);
-
-    bevy::log::info!("Finished Initialization");
+void main() {
+    //gl_Position = Model * Projection * vec4(position, 1);
+    fragCoord = position.xy;
+    gl_Position = vec4(((position.xy / iResolution) * 2) - 1, 0.0, 1);
+    uv = texcoord;
 }
-
-/// In this system we query for the `TimeComponent` and global `Time` resource, and set
-/// `time.seconds_since_startup()` as the `value` of the `TimeComponent`. This value will be
-/// accessed by the fragment shader and used to animate the shader.
-fn animate_shader(
-    _mouse_motion: EventReader<CursorMoved>,
-    mut current_frame: ResMut<CurrentFrame>,
-    mouse_button: Res<Input<MouseButton>>,
-    time: Res<Time>,
-    windows: Res<Windows>,
-    mut channels: ResMut<Assets<Texture>>,
-
-    mut query: Query<&mut ShaderToyUniform>,
-) {
-    let window = windows.iter().last().unwrap();
-    let cursor_pos = if let Some(pos) = windows.iter().last().unwrap().cursor_position() {
-        pos
-    } else {
-        Vec2::new(0.0, 0.0)
-    };
-
-    // bevy::log::info!("Current Frame: {:?}",current_frame.0);
-
-    // Set the animated variables here
-    let mut time_uniform = query.single_mut().unwrap();
-    time_uniform.time = time.seconds_since_startup() as f32;
-    //println!("{:?}", time_uniform.time);
-    time_uniform.frame = current_frame.0;
-    time_uniform.time_delta = time.delta_seconds();
-
-    let now = chrono::offset::Local::now().naive_local();
-    now.year();
-    let date = now.date();
-    let time = now.time();
-    let seconds: u128 =
-        (time.hour() as u128) * (60 * 60) * (time.minute() as u128) * 60 * (time.second() as u128);
-
-    time_uniform.date = Vec4::new(
-        date.year() as f32,
-        date.month() as f32,
-        date.month() as f32,
-        seconds as f32,
-    );
-    time_uniform.resolution = Vec2::new(window.width(), window.height());
-
-    let left = if mouse_button.pressed(MouseButton::Left) {
-        1.0
-    } else {
-        0.0
-    };
-    let right = if mouse_button.pressed(MouseButton::Right) {
-        1.0
-    } else {
-        0.0
-    };
-
-    time_uniform.mouse = Vec4::new(cursor_pos.x, cursor_pos.y, left, right);
-    current_frame.0 += 1;
-}
+";

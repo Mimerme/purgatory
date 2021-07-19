@@ -13,7 +13,7 @@ pub struct QuadToy {
     date: [f32; 4],
     pub resolution: [f32; 2],
     frame: u32,
-    pub framecounter : FrameCounter,
+    pub framecounter: FrameCounter,
 }
 
 const TOY_UNIFORMS: [(&'static str, UniformType); 6] = [
@@ -25,6 +25,30 @@ const TOY_UNIFORMS: [(&'static str, UniformType); 6] = [
     ("iResolution", UniformType::Float2),
 ];
 
+pub fn default_material(vertex_shader : String, fragment_shader : String) -> Material {
+    load_material(
+        &vertex_shader,
+        &fragment_shader,
+        MaterialParams {
+            pipeline_params: PipelineParams {
+                depth_write: true,
+                depth_test: Comparison::LessOrEqual,
+                ..Default::default()
+            },
+            uniforms: vec![
+                ("iTime".to_string(), UniformType::Float1),
+                ("iTimeDelta".to_string(), UniformType::Float1),
+                ("iFrame".to_string(), UniformType::Int1),
+                ("iDate".to_string(), UniformType::Float4),
+                ("iMouse".to_string(), UniformType::Float4),
+                ("iResolution".to_string(), UniformType::Float2),
+            ],
+            ..Default::default()
+        },
+    )
+    .unwrap()
+}
+
 impl QuadToy {
     pub fn new(material: Material) -> Self {
         QuadToy {
@@ -35,13 +59,13 @@ impl QuadToy {
                 target: vec3(0., 0., 0.),
                 ..Default::default()
             },
-            time : 0.0,
+            time: 0.0,
             timeDelta: 0.0,
-            mouse : [0.0, 0.0, 0.0, 0.0],
-            date : [0.0, 0.0, 0.0, 0.0],
-            resolution : [screen_width(), screen_height()],
-            frame : 0,
-            framecounter : FrameCounter::default(),
+            mouse: [0.0, 0.0, 0.0, 0.0],
+            date: [0.0, 0.0, 0.0, 0.0],
+            resolution: [screen_width(), screen_height()],
+            frame: 0,
+            framecounter: FrameCounter::default(),
         }
     }
 
