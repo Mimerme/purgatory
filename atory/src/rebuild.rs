@@ -13,15 +13,16 @@ use ExternalDeclaration::FunctionDefinition;
 
 /// Should rebuild a main defintion with its body as that in mainImage()
 pub fn get_main(main_image: NonEmpty<ExternalDeclaration>) -> NonEmpty<ExternalDeclaration> {
+    let mut definitions = vec![];
     for dec in main_image.into_iter() {
         match dec {
             FunctionDefinition(def) => {
-                if def.prototype.name.0 != "mainImage"{
+                if def.prototype.name.0 != "mainImage" {
+                    definitions.push(ExternalDeclaration::FunctionDefinition(def));
                     continue;
                 }
 
-
-            let proto = FunctionPrototype {
+                let proto = FunctionPrototype {
                     ty: FullySpecifiedType {
                         qualifier: None,
                         ty: TypeSpecifier {
@@ -36,30 +37,25 @@ pub fn get_main(main_image: NonEmpty<ExternalDeclaration>) -> NonEmpty<ExternalD
                 let mut def_clone = def.clone();
 
                 def_clone.prototype = proto;
-
-                return NonEmpty(vec![ExternalDeclaration::FunctionDefinition(def_clone)]);
+                definitions.push(ExternalDeclaration::FunctionDefinition(def_clone));
             }
-            _ => continue,
+            x => {
+                definitions.push(x);
+            },
         }
     }
 
-    NonEmpty(Vec::new())
+    NonEmpty(definitions)
 }
-//     let main_def = "void main(){
-
-//     }";
-
-//     let stage = ShaderStage::parse(main_def).unwrap();
-//     let TranslationUnit(decs) = stage;
-//     decs
-// }
 
 pub fn get_shadertoy_defs() -> NonEmpty<ExternalDeclaration> {
     let defs = "
+    #version 450
     in vec2 fragCoord;
     out vec4 fragColor;
 
     uniform vec4 iMouse;
+    uniform float iTime;
     uniform float iTimeDelta;
     uniform int iFrame;
     uniform vec4 iDate;
@@ -93,20 +89,16 @@ pub fn parse_declarations(
     begin
 }
 
-pub fn parse(root: TranslationUnit, transpile_main: bool) -> TranslationUnit {
+pub fn parse(root: TranslationUnit) -> TranslationUnit {
     match root {
         TranslationUnit(root_declarations) => {
             /// NOTE: this is not scalable at anything more compilcated than a single file i thinks
             /// Loop until we we find the main_image() def and then pass it to get its body yanked out
-            let functions = if transpile_main {
-                Some(get_main(root_declarations.clone()))
-            } else {
-                None
-            };
+            let functions = Some(get_main(root_declarations.clone()));
 
             TranslationUnit(parse_declarations(
                 get_shadertoy_defs(),
-                Some(root_declarations),
+                None,
                 functions,
             ))
         }

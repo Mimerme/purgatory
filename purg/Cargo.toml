@@ -11,7 +11,6 @@ macroquad = "0.3"
 # macroquad = {path="../../macroquad"}
 frame_counter = "0.1.2"
 imgui = { version = "0.7.0" }
-imnodes = {path="../../imnodes-rs"}
 chrono = "0.4.*"
 
 [lib]

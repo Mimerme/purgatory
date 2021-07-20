@@ -4,6 +4,8 @@ use glsl::syntax::ShaderStage;
 use glsl::parser::Parse;
 use std::fmt::Write;
 
+pub mod download;
+
 pub fn load_glsl_shader(file_path : &str) -> NonEmpty<ExternalDeclaration> {
 	let content = std::fs::read_to_string(file_path).unwrap();
 	let stage = ShaderStage::parse(content).unwrap().0;

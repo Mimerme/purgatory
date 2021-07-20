@@ -32,7 +32,6 @@ async fn main() {
     let mut quadtoy = QuadToy::new(default_material(vertex_shader, fragment_shader));
 
     loop {
-        let (x, y, w, h) = (0.0f32, 0.0f32, quadtoy.resolution[0], quadtoy.resolution[1]);
         quadtoy.framecounter.tick();
 
         quadtoy.draw();
@@ -75,10 +74,10 @@ void main() {
 const DEFAULT_VERTEX_SHADER: &'static str = "#version 450
 precision lowp float;
 
-attribute vec3 position;
-attribute vec2 texcoord;
+in vec3 position;
+in vec2 texcoord;
 
-varying vec2 uv;
+out vec2 uv;
 uniform vec2 iResolution;
 out vec2 fragCoord;
 

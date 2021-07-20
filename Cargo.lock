@@ -837,22 +837,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "imnodes"
-version = "0.1.0"
-dependencies = [
- "imgui",
- "imnodes-sys",
-]
-
-[[package]]
-name = "imnodes-sys"
-version = "0.1.0"
-dependencies = [
- "cc",
- "imgui-sys",
-]
-
-[[package]]
 name = "indexmap"
 version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1543,7 +1527,6 @@ dependencies = [
  "chrono",
  "frame_counter",
  "imgui",
- "imnodes",
  "macroquad",
 ]
 

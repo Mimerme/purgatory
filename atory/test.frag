@@ -1,23 +1,10 @@
-layout (location = 0) in vec2 fragCoord;
-layout (location = 0) out vec4 fragColor;
-layout (set = 2, binding = 0) uniform ShaderToyUniform_time {float iTime;
-
-};
-layout (set = 2, binding = 1) uniform ShaderToyUniform_mouse {vec4 iMouse;
-
-};
-layout (set = 2, binding = 2) uniform ShaderToyUniform_time_delta {float iTimeDelta;
-
-};
-layout (set = 2, binding = 3) uniform ShaderToyUniform_frame {int iFrame;
-
-};
-layout (set = 2, binding = 4) uniform ShaderToyUniform_date {vec4 iDate;
-
-};
-layout (set = 2, binding = 5) uniform ShaderToyUniform_resolution {vec2 iResolution;
-
-};
+in vec2 fragCoord;
+out vec4 fragColor;
+uniform vec4 iMouse;
+uniform float iTimeDelta;
+uniform int iFrame;
+uniform vec4 iDate;
+uniform vec2 iResolution;
 float rand(vec2 n) {
 return fract((sin(dot(n, vec2(12.9898, 4.1414))))*(43758.547));
 }
